@@ -7,6 +7,9 @@ from main import app
 
 @pytest.fixture(autouse=True)
 async def reset_db():
+    db_path = os.environ["DB_PATH"]
+    if os.path.exists(db_path):
+        os.remove(db_path)
     from db import init_db
     await init_db()
     yield
