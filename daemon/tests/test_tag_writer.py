@@ -26,4 +26,5 @@ def test_skips_unreadable_file(tmp_path):
     f.write_bytes(b"not audio")
     match = BookMatch(title="Test", author="Author",
                       confidence=0.95, source=IdentificationSource.TAGS)
-    write_tags_to_files([str(f)], match)  # Should not raise
+    write_tags_to_files([str(f)], match)
+    assert f.read_bytes() == b"not audio"

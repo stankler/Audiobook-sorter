@@ -10,15 +10,12 @@ def write_tags_to_files(file_paths: list[str], match: BookMatch):
             pass
 
 def _write_tags(path_str: str, match: BookMatch):
-    from mutagen.id3 import ID3, TIT2, TPE1, TALB, ID3NoHeaderError
+    from mutagen.id3 import ID3, TIT2, TPE1, TALB
     from mutagen.mp4 import MP4
 
     suffix = Path(path_str).suffix.lower()
     if suffix == ".mp3":
-        try:
-            tags = ID3(path_str)
-        except ID3NoHeaderError:
-            tags = ID3()
+        tags = ID3(path_str)
         tags.setall("TIT2", [TIT2(encoding=3, text=match.title)])
         tags.setall("TPE1", [TPE1(encoding=3, text=match.author)])
         if match.series:
