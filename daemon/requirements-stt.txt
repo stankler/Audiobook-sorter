@@ -1,0 +1,5 @@
+# STT dependencies — require Python <=3.12
+# Install on Unraid which ships Python 3.11:
+#   pip install -r requirements-stt.txt
+openai-whisper==20240930
+torch==2.3.0
