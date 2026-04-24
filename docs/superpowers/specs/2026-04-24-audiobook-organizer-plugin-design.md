@@ -69,7 +69,8 @@ Each book passes through stages in order, stopping at first confident match:
 
 ### Stage 4 — No Match
 - Book flagged → added to manual review queue
-- Files moved to `{dest}/_unidentified/` (preserved, never deleted)
+- Files remain in original location until user takes action from manual review queue
+- User can manually assign book identity in review queue, then trigger a move to `{dest}/_unidentified/` or a specified path
 
 ### Confidence Score
 Weighted combination of: title string similarity, author match, publication year plausibility. Default threshold: 0.85 (configurable 0.70–0.95).
@@ -125,8 +126,9 @@ King, Stephen/
 1. Scan completes → results table populates
 2. Each row shows: current path → proposed path, confidence %, identification source (tags / filename / STT)
 3. All rows checked by default; user unchecks to skip individual books
-4. "Apply Selected" button → daemon executes approved moves, shows progress
-5. Manual review queue tab shows flagged books separately (low confidence + unidentified)
+4. "Write tags after move" checkbox shown above table — applies to entire approval batch
+5. "Apply Selected" button → daemon executes approved moves, shows progress
+6. Manual review queue tab shows flagged books separately (low confidence + unidentified); files remain in place until user acts
 
 ---
 
@@ -140,7 +142,6 @@ King, Stephen/
 | STT engine | None / Local Whisper / OpenAI API / Google Speech |
 | Whisper model size | tiny / base / small / medium / large (if local) |
 | STT API key | Required if cloud STT selected |
-| Write tags after move | Per-scan toggle |
 | Confidence threshold | Slider 0.70–0.95, default 0.85 |
 
 ---
@@ -175,10 +176,11 @@ King, Stephen/
 
 ## Tag Writing
 
-When "Write tags after move" is enabled for a scan:
+When "Write tags after move" is checked in the approval UI:
 - `mutagen` updates title, author, album artist, and series tags on moved files
 - Applied after successful move, before scan marked complete
 - Only updates files whose book was positively identified (not manual review items)
+- Decision is per-approval-batch, not persisted in config
 
 ---
 
@@ -199,7 +201,7 @@ When "Write tags after move" is enabled for a scan:
 
 - **Multi-disc / split books** (Part 1, Part 2): grouped as one book, numbered subfolder
 - **Anthologies / short story collections**: matched as standalone (no series)
-- **Unidentified after all 4 stages**: moved to `{dest}/_unidentified/`, never deleted
+- **Unidentified after all 4 stages**: files stay in place, shown in manual review queue; user can assign identity or explicitly move to `{dest}/_unidentified/`
 - **Nested chaos** (folders within folders): recursive scan, each file group evaluated independently
 - **Duplicate formats** (mp3 + m4b of same book): flagged, user decides
 
