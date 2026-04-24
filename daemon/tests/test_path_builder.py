@@ -20,8 +20,13 @@ def test_series_book_path():
     assert path == "/library/Sanderson, Brandon/Stormlight Archive/1 - The Way of Kings"
 
 def test_sanitizes_special_chars():
-    path = build_proposed_path(match("Book: A Story", "O'Brien, Tim"), "/library")
+    path = build_proposed_path(match('Book: A "Story" <here>', 'O|Brien, Tim*'), "/library")
     assert ":" not in path
+    assert '"' not in path
+    assert "<" not in path
+    assert ">" not in path
+    assert "|" not in path
+    assert "*" not in path
 
 def test_fractional_series_number():
     path = build_proposed_path(
