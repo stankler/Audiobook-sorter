@@ -1,20 +1,19 @@
 import aiosqlite
 import os
+from typing import AsyncGenerator
 
 DB_PATH = os.environ.get("DB_PATH", "/boot/config/plugins/audiobook-organizer/state.db")
 
-async def get_db() -> aiosqlite.Connection:
+async def get_db() -> AsyncGenerator[aiosqlite.Connection, None]:
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    db = await aiosqlite.connect(DB_PATH)
-    db.row_factory = aiosqlite.Row
-    return db
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        yield db
 
 async def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    db = await aiosqlite.connect(DB_PATH)
-    db.row_factory = aiosqlite.Row
-
-    try:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
         await db.executescript("""
             CREATE TABLE IF NOT EXISTS config (
                 key TEXT PRIMARY KEY,
@@ -37,10 +36,7 @@ async def init_db():
             );
         """)
         await db.commit()
-        # Ensure scan_state has one row
         await db.execute(
             "INSERT OR IGNORE INTO scan_state (id, status, data) VALUES (1, 'idle', '{}')"
         )
         await db.commit()
-    finally:
-        await db.close()
