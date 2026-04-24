@@ -32,6 +32,13 @@ def test_creates_destination_directory(tmp_path):
     move_book_files([str(src)], str(dest))
     assert dest.exists()
 
+def test_raises_on_intra_batch_duplicate(tmp_path):
+    src1 = make_fake_mp3(tmp_path / "a" / "book.mp3")
+    src2 = make_fake_mp3(tmp_path / "b" / "book.mp3")
+    dest = tmp_path / "dest"
+    with pytest.raises(MoveError, match="already exists"):
+        move_book_files([str(src1), str(src2)], str(dest))
+
 @pytest.mark.asyncio
 async def test_undo_moves_file_back(tmp_path):
     src = make_fake_mp3(tmp_path / "src" / "book.mp3")

@@ -16,11 +16,13 @@ def move_book_files(src_paths: list[str], dest_folder: str) -> list[MoveRecord]:
     dest = Path(dest_folder)
     records = []
 
+    seen_dsts: set[Path] = set()
     for src_str in src_paths:
         src = Path(src_str)
         dst = dest / src.name
-        if dst.exists():
+        if dst.exists() or dst in seen_dsts:
             raise MoveError(f"Destination already exists: {dst}")
+        seen_dsts.add(dst)
 
     dest.mkdir(parents=True, exist_ok=True)
 
