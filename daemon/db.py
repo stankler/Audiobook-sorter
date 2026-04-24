@@ -2,17 +2,20 @@ import aiosqlite
 import os
 from typing import AsyncGenerator
 
-DB_PATH = os.environ.get("DB_PATH", "/boot/config/plugins/audiobook-organizer/state.db")
+def _db_path() -> str:
+    return os.environ.get("DB_PATH", "/boot/config/plugins/audiobook-organizer/state.db")
 
 async def get_db() -> AsyncGenerator[aiosqlite.Connection, None]:
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    async with aiosqlite.connect(DB_PATH) as db:
+    path = _db_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    async with aiosqlite.connect(path) as db:
         db.row_factory = aiosqlite.Row
         yield db
 
 async def init_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    async with aiosqlite.connect(DB_PATH) as db:
+    path = _db_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    async with aiosqlite.connect(path) as db:
         db.row_factory = aiosqlite.Row
         await db.executescript("""
             CREATE TABLE IF NOT EXISTS config (

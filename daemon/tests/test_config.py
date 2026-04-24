@@ -1,18 +1,6 @@
 import pytest
-import os
-os.environ["DB_PATH"] = "/tmp/test-ao-config.db"
-
 from httpx import AsyncClient, ASGITransport
 from main import app
-
-@pytest.fixture(autouse=True)
-async def reset_db():
-    db_path = os.environ["DB_PATH"]
-    if os.path.exists(db_path):
-        os.remove(db_path)
-    from db import init_db
-    await init_db()
-    yield
 
 @pytest.fixture
 async def client():
@@ -43,3 +31,8 @@ async def test_save_config(client):
     r2 = await client.get("/api/config")
     assert r2.json()["source_path"] == "/mnt/user/audiobooks-raw"
     assert r2.json()["confidence_threshold"] == 0.80
+
+@pytest.mark.asyncio
+async def test_config_rejects_invalid_confidence(client):
+    r = await client.post("/api/config", json={"confidence_threshold": 0.50})
+    assert r.status_code == 422
