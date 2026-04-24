@@ -72,13 +72,14 @@ async def approve_moves(req: ApproveRequest):
             move.status = "failed"
             errors.append(str(e))
 
-    async with aiosqlite.connect(_db_path()) as db:
-        await db.execute(
-            "INSERT INTO rollback_log (moves, created_at) VALUES (?, ?)",
-            (json.dumps([{"src": r.src, "dst": r.dst} for r in all_records]),
-             datetime.utcnow().isoformat())
-        )
-        await db.commit()
+    if all_records:
+        async with aiosqlite.connect(_db_path()) as db:
+            await db.execute(
+                "INSERT INTO rollback_log (moves, created_at) VALUES (?, ?)",
+                (json.dumps([{"src": r.src, "dst": r.dst} for r in all_records]),
+                 datetime.utcnow().isoformat())
+            )
+            await db.commit()
 
     state.status = ScanStatus.COMPLETE
     await save_scan_state(state)

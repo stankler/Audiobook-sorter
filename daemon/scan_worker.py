@@ -25,7 +25,7 @@ async def load_scan_state() -> ScanState:
 async def save_scan_state(state: ScanState):
     async with aiosqlite.connect(_db_path()) as db:
         await db.execute(
-            "UPDATE scan_state SET status = ?, data = ? WHERE id = 1",
+            "INSERT OR REPLACE INTO scan_state (id, status, data) VALUES (1, ?, ?)",
             (state.status.value, state.model_dump_json()),
         )
         await db.commit()

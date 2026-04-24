@@ -16,13 +16,27 @@ async def test_scan_status_idle(client):
     assert r.json()["status"] == "idle"
 
 @pytest.mark.asyncio
-async def test_start_scan_returns_accepted(client, tmp_path):
-    (tmp_path / "book.mp3").write_bytes(b"\x00" * 100)
-    with patch("scan_worker.run_scan", AsyncMock()):
+async def test_start_scan_returns_accepted(client):
+    from models import Config
+    with patch("main.run_scan", AsyncMock()), \
+         patch("main.load_config", AsyncMock(return_value=Config(
+             source_path="/mnt/src", dest_path="/mnt/dest"
+         ))):
         r = await client.post("/api/scan/start")
-    assert r.status_code in (200, 202, 400)
+    assert r.status_code == 202
 
 @pytest.mark.asyncio
 async def test_approve_empty_list_returns_ok(client):
     r = await client.post("/api/scan/approve", json={"approved_ids": [], "write_tags": False})
     assert r.status_code == 200
+
+@pytest.mark.asyncio
+async def test_get_manual_review_empty(client):
+    r = await client.get("/api/manual-review")
+    assert r.status_code == 200
+    assert r.json() == []
+
+@pytest.mark.asyncio
+async def test_move_to_unidentified_returns_404_when_no_such_id(client):
+    r = await client.post("/api/manual-review/nonexistent/move-unidentified")
+    assert r.status_code == 404
