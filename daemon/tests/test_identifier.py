@@ -1,8 +1,5 @@
 # daemon/tests/test_identifier.py
 import pytest
-import os
-os.environ["DB_PATH"] = "/tmp/test-ao-identifier.db"
-
 from unittest.mock import patch, AsyncMock
 from models import BookGroup, IdentificationSource, Config, STTEngine
 from identifier import identify_book
@@ -15,11 +12,6 @@ HOBBIT_CANDIDATE = {
         "seriesInfo": {"bookSeries": [{"seriesId": "xyz", "orderNumber": "0"}]},
     }
 }
-
-@pytest.fixture(autouse=True)
-async def setup_db():
-    from db import init_db
-    await init_db()
 
 @pytest.mark.asyncio
 async def test_identifies_via_tags():

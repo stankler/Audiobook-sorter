@@ -8,6 +8,8 @@ from confidence import best_candidate
 from pathlib import Path
 
 async def identify_book(group: BookGroup, cfg: Config) -> BookMatch | None:
+    if not group.files:
+        return None
     first_file = group.files[0]
     threshold = cfg.confidence_threshold
 
