@@ -30,3 +30,4 @@ def test_returns_none_on_unreadable_file(tmp_path):
     f.write_bytes(b"not audio")
     result = read_tags(str(f))
     assert result["title"] is None
+    assert result["author"] is None
