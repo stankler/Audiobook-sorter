@@ -10,7 +10,11 @@ async def get_db() -> aiosqlite.Connection:
     return db
 
 async def init_db():
-    async with await get_db() as db:
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    db = await aiosqlite.connect(DB_PATH)
+    db.row_factory = aiosqlite.Row
+
+    try:
         await db.executescript("""
             CREATE TABLE IF NOT EXISTS config (
                 key TEXT PRIMARY KEY,
@@ -38,3 +42,5 @@ async def init_db():
             "INSERT OR IGNORE INTO scan_state (id, status, data) VALUES (1, 'idle', '{}')"
         )
         await db.commit()
+    finally:
+        await db.close()
