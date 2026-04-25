@@ -1,4 +1,11 @@
+import re
 from difflib import SequenceMatcher
+
+
+def _normalize_title(t: str) -> str:
+    t = re.sub(r'\s*\([^)]*(?:#|[Bb]ook)\s*\d+[^)]*\)', '', t)
+    t = re.sub(r'^(?:the|a|an)\s+', '', t.strip(), flags=re.IGNORECASE)
+    return t.lower().strip()
 
 
 def score_candidate(query_title: str, query_author: str | None, candidate: dict) -> float:
@@ -18,7 +25,7 @@ def score_candidate(query_title: str, query_author: str | None, candidate: dict)
     book_authors = info.get("authors", [])
 
     title_sim = SequenceMatcher(
-        None, query_title.lower().strip(), book_title.lower().strip()
+        None, _normalize_title(query_title), _normalize_title(book_title)
     ).ratio()
 
     if book_authors and query_author:

@@ -4,8 +4,20 @@ function esc(s) {
   return d.innerHTML;
 }
 
-const API = (action, opts = {}) =>
-  fetch(`/plugins/audiobook-organizer/api.php?action=${action}`, { method: opts.body ? 'POST' : 'GET', ...opts });
+const API = (action, opts = {}) => {
+  const url = `/plugins/audiobook-organizer/api.php?action=${action}`;
+  if (opts.body) {
+    const form = new URLSearchParams();
+    if (typeof csrf_token !== 'undefined') form.set('csrf_token', csrf_token);
+    form.set('payload', opts.body);
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString(),
+    });
+  }
+  return fetch(url, { method: 'GET' });
+};
 
 document.querySelectorAll('.ao-tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -34,7 +46,7 @@ function updateSttVisibility() {
 }
 if (sttSelect) { sttSelect.addEventListener('change', updateSttVisibility); updateSttVisibility(); }
 
-fetch('?action=config_get').then(r => r.json()).then(cfg => {
+API('config_get').then(r => r.json()).then(cfg => {
   if (cfg.stt_engine && sttSelect) { sttSelect.value = cfg.stt_engine; updateSttVisibility(); }
   if (cfg.whisper_model) document.getElementById('cfg-whisper-model').value = cfg.whisper_model;
   if (cfg.confidence_threshold && threshold) {
@@ -149,7 +161,7 @@ async function loadReview() {
 
 async function moveUnidentified(id) {
   if (!confirm('Move this book to _unidentified folder?')) return;
-  const r = await fetch(`?action=move_unidentified&id=${id}`, { method: 'POST', body: '{}' });
+  const r = await API(`move_unidentified&id=${id}`, { body: '{}' });
   const data = await r.json();
   if (data.error) { alert('Error: ' + data.error); return; }
   loadReview();

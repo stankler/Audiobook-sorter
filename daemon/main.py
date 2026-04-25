@@ -1,5 +1,6 @@
 # daemon/main.py
 import json
+import logging
 import aiosqlite
 from datetime import datetime
 from fastapi import FastAPI, BackgroundTasks, HTTPException
@@ -9,6 +10,15 @@ from models import Config, ApproveRequest, ScanStatus
 from scan_worker import load_scan_state, save_scan_state, run_scan
 from file_mover import move_book_files, undo_moves, MoveRecord
 from tag_writer import write_tags_to_files
+
+_log_path = "/config/audiobook-organizer.log"
+_ao_logger = logging.getLogger("ao")
+_ao_logger.setLevel(logging.INFO)
+import os as _os
+if _os.path.isdir(_os.path.dirname(_log_path)):
+    _fh = logging.FileHandler(_log_path)
+    _fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    _ao_logger.addHandler(_fh)
 
 app = FastAPI(title="Audiobook Organizer")
 
@@ -127,7 +137,7 @@ async def move_to_unidentified(item_id: str):
 @app.get("/api/logs")
 async def get_logs():
     import os
-    log_path = "/boot/config/plugins/audiobook-organizer/audiobook-organizer.log"
+    log_path = "/config/audiobook-organizer.log"
     if not os.path.exists(log_path):
         return {"lines": []}
     with open(log_path) as f:

@@ -6,4 +6,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY *.py ./
 COPY pipeline/ ./pipeline/
 COPY stt/ ./stt/
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7171", "--log-level", "warning"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7171", "--log-level", "info"]

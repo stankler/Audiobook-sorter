@@ -92,6 +92,7 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
   </div>
 </div>
 
+<script>var csrf_token = "<?=htmlspecialchars($var['csrf_token'] ?? '')?>";</script>
 <script src="/plugins/audiobook-organizer/js/app.js"></script>
 <?php endif; ?>
 </body>

@@ -40,7 +40,9 @@ async def query_google_books(
                 r.raise_for_status()
                 data = r.json()
                 items = data.get("items", [])
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.getLogger("ao").warning("Google Books query failed q=%r: %s", query, e)
             return []
         finally:
             _last_request_time = time.time()

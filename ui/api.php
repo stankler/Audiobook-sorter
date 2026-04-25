@@ -3,13 +3,21 @@ require_once __DIR__ . '/include/api_client.php';
 
 header('Content-Type: application/json');
 
+register_shutdown_function(function() {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (!headers_sent()) header('Content-Type: application/json');
+        echo json_encode(['error' => $e['message']]);
+    }
+});
+
 $action = $_GET['action'] ?? '';
 switch ($action) {
     case 'config_get':
         echo json_encode(daemon_get('/api/config'));
         break;
     case 'config_save':
-        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $data = json_decode($_POST['payload'] ?? '{}', true) ?? [];
         echo json_encode(daemon_post('/api/config', $data));
         break;
     case 'scan_start':
@@ -19,7 +27,7 @@ switch ($action) {
         echo json_encode(daemon_get('/api/scan/status'));
         break;
     case 'scan_approve':
-        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $data = json_decode($_POST['payload'] ?? '{}', true) ?? [];
         echo json_encode(daemon_post('/api/scan/approve', $data));
         break;
     case 'scan_undo':

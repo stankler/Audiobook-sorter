@@ -10,7 +10,8 @@ function daemon_get(string $path): array {
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    if ($body === false || $code >= 400) return ['error' => "HTTP $code"];
+    if ($body === false) return ['error' => "curl failed"];
+    if ($code >= 400) return ['error' => "HTTP $code", 'detail' => json_decode($body, true)];
     return json_decode($body, true) ?? ['error' => 'Invalid JSON'];
 }
 
@@ -26,6 +27,7 @@ function daemon_post(string $path, array $data = []): array {
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    if ($body === false || $code >= 400) return ['error' => "HTTP $code"];
+    if ($body === false) return ['error' => "curl failed"];
+    if ($code >= 400) return ['error' => "HTTP $code", 'detail' => json_decode($body, true)];
     return json_decode($body, true) ?? ['error' => 'Invalid JSON'];
 }

@@ -13,8 +13,8 @@ def parse_folder_name(folder_name: str) -> tuple[str, str | None]:
 
 
 def _parse_name(name: str) -> tuple[str, str | None]:
-    # Strip leading track numbers: "01 - ", "001_", "1. "
-    name = re.sub(r"^\d+[\s\-_\.]+", "", name)
+    # Strip leading track numbers: "01 - ", "001_", "1. " or "#10 "
+    name = re.sub(r"^#?\d+[\s\-_\.]+", "", name)
     # Strip trailing chapter/part indicators: "_ch01", "_chapter01", "_part01", etc.
     name = re.sub(r"[_\-](?:ch|chapter|part|track|pt)\w*$", "", name, flags=re.IGNORECASE)
     # Strip bracketed content: [Unabridged], [MP3], (2001)
