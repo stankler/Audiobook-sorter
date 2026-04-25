@@ -5,43 +5,6 @@ Icon="music"
 <?php
 require_once '/usr/local/emhttp/plugins/audiobook-organizer/include/api_client.php';
 
-if (isset($_GET['action'])) {
-    header('Content-Type: application/json');
-    switch ($_GET['action']) {
-        case 'config_get':
-            echo json_encode(daemon_get('/api/config'));
-            break;
-        case 'config_save':
-            $data = json_decode(file_get_contents('php://input'), true);
-            echo json_encode(daemon_post('/api/config', $data));
-            break;
-        case 'scan_start':
-            echo json_encode(daemon_post('/api/scan/start'));
-            break;
-        case 'scan_status':
-            echo json_encode(daemon_get('/api/scan/status'));
-            break;
-        case 'scan_approve':
-            $data = json_decode(file_get_contents('php://input'), true);
-            echo json_encode(daemon_post('/api/scan/approve', $data));
-            break;
-        case 'scan_undo':
-            echo json_encode(daemon_post('/api/scan/undo'));
-            break;
-        case 'manual_review':
-            echo json_encode(daemon_get('/api/manual-review'));
-            break;
-        case 'move_unidentified':
-            $id = $_GET['id'] ?? '';
-            echo json_encode(daemon_post("/api/manual-review/{$id}/move-unidentified"));
-            break;
-        case 'logs':
-            echo json_encode(daemon_get('/api/logs'));
-            break;
-    }
-    exit;
-}
-
 $health = daemon_get('/api/health');
 $daemon_up = !isset($health['error']);
 $config = $daemon_up ? daemon_get('/api/config') : [];

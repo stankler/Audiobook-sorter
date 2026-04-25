@@ -5,7 +5,7 @@ function esc(s) {
 }
 
 const API = (action, opts = {}) =>
-  fetch(`?action=${action}`, { method: opts.body ? 'POST' : 'GET', ...opts });
+  fetch(`/plugins/audiobook-organizer/api.php?action=${action}`, { method: opts.body ? 'POST' : 'GET', ...opts });
 
 document.querySelectorAll('.ao-tab').forEach(btn => {
   btn.addEventListener('click', () => {
