@@ -1,0 +1,135 @@
+Menu="Tools"
+Title="Audiobook Organizer"
+Icon="music"
+---
+<?php
+require_once '/usr/local/emhttp/plugins/audiobook-organizer/include/api_client.php';
+
+if (isset($_GET['action'])) {
+    header('Content-Type: application/json');
+    switch ($_GET['action']) {
+        case 'config_get':
+            echo json_encode(daemon_get('/api/config'));
+            break;
+        case 'config_save':
+            $data = json_decode(file_get_contents('php://input'), true);
+            echo json_encode(daemon_post('/api/config', $data));
+            break;
+        case 'scan_start':
+            echo json_encode(daemon_post('/api/scan/start'));
+            break;
+        case 'scan_status':
+            echo json_encode(daemon_get('/api/scan/status'));
+            break;
+        case 'scan_approve':
+            $data = json_decode(file_get_contents('php://input'), true);
+            echo json_encode(daemon_post('/api/scan/approve', $data));
+            break;
+        case 'scan_undo':
+            echo json_encode(daemon_post('/api/scan/undo'));
+            break;
+        case 'manual_review':
+            echo json_encode(daemon_get('/api/manual-review'));
+            break;
+        case 'move_unidentified':
+            $id = $_GET['id'] ?? '';
+            echo json_encode(daemon_post("/api/manual-review/{$id}/move-unidentified"));
+            break;
+        case 'logs':
+            echo json_encode(daemon_get('/api/logs'));
+            break;
+    }
+    exit;
+}
+
+$health = daemon_get('/api/health');
+$daemon_up = !isset($health['error']);
+$config = $daemon_up ? daemon_get('/api/config') : [];
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="/plugins/audiobook-organizer/css/style.css">
+</head>
+<body>
+<?php if (!$daemon_up): ?>
+<div class="error-banner">Audiobook Organizer daemon is not running. Check plugin logs.</div>
+<?php else: ?>
+
+<div id="ao-app">
+  <div class="ao-tabs">
+    <button class="ao-tab active" data-tab="config">Configuration</button>
+    <button class="ao-tab" data-tab="scan">Scan &amp; Organize</button>
+    <button class="ao-tab" data-tab="review">Manual Review</button>
+    <button class="ao-tab" data-tab="logs">Logs</button>
+  </div>
+
+  <div id="tab-config" class="ao-tabcontent active">
+    <h2>Configuration</h2>
+    <table class="ao-form">
+      <tr><td>Source path</td><td><input id="cfg-source" type="text" value="<?= htmlspecialchars($config['source_path'] ?? '') ?>"></td></tr>
+      <tr><td>Destination path</td><td><input id="cfg-dest" type="text" value="<?= htmlspecialchars($config['dest_path'] ?? '') ?>"></td></tr>
+      <tr><td>Google Books API key</td><td><input id="cfg-gbkey" type="text" value="<?= htmlspecialchars($config['google_books_api_key'] ?? '') ?>"></td></tr>
+      <tr><td>STT engine</td>
+          <td><select id="cfg-stt">
+            <option value="none">None</option>
+            <option value="local_whisper">Local Whisper</option>
+            <option value="openai_api">OpenAI API</option>
+            <option value="google_speech">Google Speech</option>
+          </select></td></tr>
+      <tr id="cfg-whisper-row"><td>Whisper model</td>
+          <td><select id="cfg-whisper-model">
+            <option value="tiny">tiny (fastest, least accurate)</option>
+            <option value="base">base</option>
+            <option value="small" selected>small (recommended)</option>
+            <option value="medium">medium</option>
+            <option value="large">large (slowest, most accurate)</option>
+          </select></td></tr>
+      <tr id="cfg-apikey-row"><td>STT API key</td><td><input id="cfg-sttkey" type="text" value="<?= htmlspecialchars($config['stt_api_key'] ?? '') ?>"></td></tr>
+      <tr><td>Confidence threshold</td><td><input id="cfg-threshold" type="range" min="70" max="95" value="<?= (int)(($config['confidence_threshold'] ?? 0.85) * 100) ?>"> <span id="cfg-threshold-val"></span></td></tr>
+    </table>
+    <button id="cfg-save-btn" class="btn-primary">Save Configuration</button>
+    <div id="cfg-status"></div>
+  </div>
+
+  <div id="tab-scan" class="ao-tabcontent">
+    <h2>Scan &amp; Organize</h2>
+    <div id="scan-controls">
+      <button id="scan-start-btn" class="btn-primary">Start Scan</button>
+      <button id="scan-undo-btn" class="btn-secondary">Undo Last Scan</button>
+    </div>
+    <div id="scan-progress" style="display:none">
+      <p>Scanning: <span id="scan-current"></span></p>
+      <progress id="scan-bar" value="0" max="100"></progress>
+    </div>
+    <div id="scan-results" style="display:none">
+      <h3>Proposed Changes</h3>
+      <label><input type="checkbox" id="write-tags-toggle"> Write tags after move</label>
+      <table id="results-table">
+        <thead><tr><th>Select</th><th>Current path</th><th>Proposed path</th><th>Confidence</th><th>Source</th></tr></thead>
+        <tbody id="results-body"></tbody>
+      </table>
+      <button id="apply-btn" class="btn-primary">Apply Selected</button>
+    </div>
+  </div>
+
+  <div id="tab-review" class="ao-tabcontent">
+    <h2>Manual Review</h2>
+    <p>Books that could not be identified automatically.</p>
+    <table id="review-table">
+      <thead><tr><th>Folder</th><th>Files</th><th>Action</th></tr></thead>
+      <tbody id="review-body"></tbody>
+    </table>
+  </div>
+
+  <div id="tab-logs" class="ao-tabcontent">
+    <h2>Logs</h2>
+    <button id="logs-refresh-btn">Refresh</button>
+    <pre id="logs-content"></pre>
+  </div>
+</div>
+
+<script src="/plugins/audiobook-organizer/js/app.js"></script>
+<?php endif; ?>
+</body>
+</html>
