@@ -37,8 +37,8 @@ async def query_google_books(
                     BOOKS_API_URL,
                     params={"q": query, "key": api_key, "maxResults": 5, "printType": "books"},
                 )
-                await r.raise_for_status()
-                data = await r.json()
+                r.raise_for_status()
+                data = r.json()
                 items = data.get("items", [])
         except Exception:
             return []

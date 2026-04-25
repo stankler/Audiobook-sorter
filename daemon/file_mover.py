@@ -50,9 +50,15 @@ def _md5(path: Path) -> str:
     return h.hexdigest()
 
 async def undo_moves(records: list[MoveRecord]):
+    errors = []
     for r in reversed(records):
         src = Path(r.src)
         dst = Path(r.dst)
         if dst.exists():
-            src.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(dst), str(src))
+            try:
+                src.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(dst), str(src))
+            except Exception as e:
+                errors.append(f"{dst}: {e}")
+    if errors:
+        raise MoveError(f"Undo incomplete: {'; '.join(errors)}")

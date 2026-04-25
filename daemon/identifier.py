@@ -58,7 +58,8 @@ def _make_match(candidate: dict, score: float, source: IdentificationSource) -> 
     series_info = info.get("seriesInfo", {})
     if series_info and series_info.get("bookSeries"):
         first_series = series_info["bookSeries"][0]
-        series = first_series.get("seriesId")
+        series_raw = first_series.get("seriesId", "")
+        series = series_raw if series_raw and not series_raw.isdigit() else None
         try:
             series_number = float(first_series.get("orderNumber", ""))
         except (ValueError, TypeError):

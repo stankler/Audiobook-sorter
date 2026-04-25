@@ -1,3 +1,9 @@
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s ?? '');
+  return d.innerHTML;
+}
+
 const API = (action, opts = {}) =>
   fetch(`?action=${action}`, { method: opts.body ? 'POST' : 'GET', ...opts });
 
@@ -104,11 +110,11 @@ function renderResults(moves) {
   moves.forEach(move => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="checkbox" class="approve-cb" data-id="${move.id}" checked></td>
-      <td style="font-size:12px">${move.book_group.folder}</td>
-      <td style="font-size:12px">${move.proposed_path || '—'}</td>
+      <td><input type="checkbox" class="approve-cb" data-id="${esc(move.id)}" checked></td>
+      <td style="font-size:12px">${esc(move.book_group.folder)}</td>
+      <td style="font-size:12px">${esc(move.proposed_path || '—')}</td>
       <td>${move.match ? Math.round(move.match.confidence * 100) + '%' : '—'}</td>
-      <td>${move.match ? move.match.source : '—'}</td>
+      <td>${move.match ? esc(move.match.source) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -133,9 +139,9 @@ async function loadReview() {
   items.forEach(item => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${item.book_group.folder}</td>
+      <td>${esc(item.book_group.folder)}</td>
       <td>${item.book_group.files.length} file(s)</td>
-      <td><button onclick="moveUnidentified('${item.id}')">Move to _unidentified</button></td>
+      <td><button onclick="moveUnidentified('${esc(item.id)}')">Move to _unidentified</button></td>
     `;
     tbody.appendChild(tr);
   });

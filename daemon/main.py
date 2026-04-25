@@ -81,7 +81,9 @@ async def approve_moves(req: ApproveRequest):
             )
             await db.commit()
 
-    state.status = ScanStatus.COMPLETE
+    state.status = ScanStatus.COMPLETE if not errors else ScanStatus.ERROR
+    if errors:
+        state.error = f"{len(errors)} move(s) failed"
     await save_scan_state(state)
     return {"moved": len([m for m in approved if m.status == "moved"]), "errors": errors}
 
