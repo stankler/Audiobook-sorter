@@ -173,3 +173,50 @@ async function loadLogs() {
   document.getElementById('logs-content').textContent = (data.lines || []).join('\n');
 }
 document.getElementById('logs-refresh-btn')?.addEventListener('click', loadLogs);
+
+// Folder browser
+let _browseTarget = null;
+
+async function openBrowser(targetId, startPath) {
+  _browseTarget = targetId;
+  document.getElementById('browse-modal').style.display = '';
+  await browseLoad(startPath || document.getElementById(targetId).value || '/mnt');
+}
+
+async function browseLoad(path) {
+  const r = await API(`browse&path=${encodeURIComponent(path)}`);
+  const data = await r.json();
+  if (data.error) { alert('Browse error: ' + data.error); return; }
+
+  document.getElementById('browse-path').textContent = data.path;
+  document.getElementById('browse-select').onclick = () => {
+    document.getElementById(_browseTarget).value = data.path;
+    closeBrowser();
+  };
+
+  const list = document.getElementById('browse-list');
+  list.innerHTML = '';
+  if (data.path !== data.parent) {
+    const up = document.createElement('li');
+    up.className = 'up';
+    up.textContent = '↑ ..';
+    up.onclick = () => browseLoad(data.parent);
+    list.appendChild(up);
+  }
+  data.entries.forEach(e => {
+    const li = document.createElement('li');
+    li.textContent = '📁 ' + esc(e.name);
+    li.onclick = () => browseLoad(e.path);
+    list.appendChild(li);
+  });
+}
+
+function closeBrowser() {
+  document.getElementById('browse-modal').style.display = 'none';
+}
+
+document.getElementById('browse-cancel')?.addEventListener('click', closeBrowser);
+document.getElementById('browse-backdrop')?.addEventListener('click', closeBrowser);
+document.querySelectorAll('.btn-browse').forEach(btn => {
+  btn.addEventListener('click', () => openBrowser(btn.dataset.target));
+});

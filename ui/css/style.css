@@ -16,3 +16,12 @@
 #logs-content { background: #111; color: #eee; padding: 12px; font-size: 12px; height: 400px; overflow-y: auto; white-space: pre-wrap; }
 #scan-progress { margin: 12px 0; }
 progress { width: 400px; }
+.btn-browse { padding: 4px 10px; cursor: pointer; margin-left: 6px; }
+#browse-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100; }
+#browse-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:6px; width:480px; max-height:70vh; display:flex; flex-direction:column; z-index:101; padding:16px; box-sizing:border-box; }
+#browse-path { font-size:12px; color:#555; margin-bottom:8px; word-break:break-all; }
+#browse-list { list-style:none; margin:0; padding:0; overflow-y:auto; flex:1; border:1px solid #ddd; border-radius:4px; }
+#browse-list li { padding:8px 12px; cursor:pointer; border-bottom:1px solid #f0f0f0; }
+#browse-list li:hover { background:#e3f2fd; }
+#browse-list li.up { color:#888; font-style:italic; }
+#browse-actions { display:flex; gap:8px; margin-top:12px; justify-content:flex-end; }

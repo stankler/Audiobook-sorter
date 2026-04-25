@@ -40,6 +40,10 @@ switch ($action) {
         $id = $_GET['id'] ?? '';
         echo json_encode(daemon_post("/api/manual-review/{$id}/move-unidentified"));
         break;
+    case 'browse':
+        $path = $_GET['path'] ?? '/mnt';
+        echo json_encode(daemon_get('/api/browse?path=' . urlencode($path)));
+        break;
     case 'logs':
         echo json_encode(daemon_get('/api/logs'));
         break;

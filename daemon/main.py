@@ -1,9 +1,12 @@
 # daemon/main.py
 import json
 import logging
+import os
 import aiosqlite
 from datetime import datetime
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from pathlib import Path
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Query
+from typing import Optional
 from db import init_db, _db_path
 from config import load_config, save_config
 from models import Config, ApproveRequest, ScanStatus
@@ -133,6 +136,20 @@ async def move_to_unidentified(item_id: str):
         return {"moved": len(records)}
     except Exception as e:
         raise HTTPException(500, str(e))
+
+@app.get("/api/browse")
+async def browse(path: str = Query(default="/mnt")):
+    try:
+        p = Path(path).resolve()
+        entries = sorted(
+            [{"name": e.name, "path": str(e)} for e in p.iterdir() if e.is_dir() and not e.name.startswith('.')],
+            key=lambda x: x["name"].lower()
+        )
+        return {"path": str(p), "parent": str(p.parent), "entries": entries}
+    except PermissionError:
+        raise HTTPException(403, "Permission denied")
+    except FileNotFoundError:
+        raise HTTPException(404, "Path not found")
 
 @app.get("/api/logs")
 async def get_logs():

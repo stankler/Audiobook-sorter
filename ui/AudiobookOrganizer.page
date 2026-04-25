@@ -30,8 +30,8 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
   <div id="tab-config" class="ao-tabcontent active">
     <h2>Configuration</h2>
     <table class="ao-form">
-      <tr><td>Source path</td><td><input id="cfg-source" type="text" value="<?= htmlspecialchars($config['source_path'] ?? '') ?>"></td></tr>
-      <tr><td>Destination path</td><td><input id="cfg-dest" type="text" value="<?= htmlspecialchars($config['dest_path'] ?? '') ?>"></td></tr>
+      <tr><td>Source path</td><td><input id="cfg-source" type="text" value="<?= htmlspecialchars($config['source_path'] ?? '') ?>"> <button type="button" class="btn-browse" data-target="cfg-source">Browse</button></td></tr>
+      <tr><td>Destination path</td><td><input id="cfg-dest" type="text" value="<?= htmlspecialchars($config['dest_path'] ?? '') ?>"> <button type="button" class="btn-browse" data-target="cfg-dest">Browse</button></td></tr>
       <tr><td>Google Books API key</td><td><input id="cfg-gbkey" type="text" value="<?= htmlspecialchars($config['google_books_api_key'] ?? '') ?>"></td></tr>
       <tr><td>STT engine</td>
           <td><select id="cfg-stt">
@@ -92,6 +92,17 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
   </div>
 </div>
 
+<div id="browse-modal" style="display:none">
+  <div id="browse-backdrop"></div>
+  <div id="browse-dialog">
+    <div id="browse-path"></div>
+    <ul id="browse-list"></ul>
+    <div id="browse-actions">
+      <button id="browse-select" class="btn-primary">Select This Folder</button>
+      <button id="browse-cancel" class="btn-secondary">Cancel</button>
+    </div>
+  </div>
+</div>
 <script>var csrf_token = "<?=htmlspecialchars($var['csrf_token'] ?? '')?>";</script>
 <script src="/plugins/audiobook-organizer/js/app.js"></script>
 <?php endif; ?>
