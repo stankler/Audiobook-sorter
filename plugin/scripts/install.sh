@@ -12,6 +12,10 @@ python3 -m venv $DAEMON_DIR/venv
 $DAEMON_DIR/venv/bin/pip install --quiet \
   --trusted-host pypi.org \
   --trusted-host files.pythonhosted.org \
+  --upgrade pip
+$DAEMON_DIR/venv/bin/pip install --quiet \
+  --trusted-host pypi.org \
+  --trusted-host files.pythonhosted.org \
   -r $DAEMON_DIR/requirements.txt
 
 mkdir -p $PLUGIN_UI_DIR
