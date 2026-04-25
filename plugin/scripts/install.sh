@@ -10,12 +10,8 @@ cp -r daemon/* $DAEMON_DIR/
 
 python3 -m venv $DAEMON_DIR/venv
 $DAEMON_DIR/venv/bin/pip install --quiet \
-  --trusted-host pypi.org \
-  --trusted-host files.pythonhosted.org \
-  --upgrade pip
-$DAEMON_DIR/venv/bin/pip install --quiet \
-  --trusted-host pypi.org \
-  --trusted-host files.pythonhosted.org \
+  --no-index \
+  --find-links $DAEMON_DIR/wheels \
   -r $DAEMON_DIR/requirements.txt
 
 mkdir -p $PLUGIN_UI_DIR
