@@ -1,0 +1,30 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY name "audiobook-organizer">
+  <!ENTITY author "your-github-username">
+  <!ENTITY version "1.0.0">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/your-github-username/audiobook-organizer/main/plugin/audiobook-organizer.plg">
+]>
+<PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;">
+
+<CHANGES>
+  <VERSION num="1.0.0">
+    Initial release. Multi-stage audiobook identification and organization.
+  </VERSION>
+</CHANGES>
+
+<FILE Name="/boot/config/plugins/&name;/install.sh" Run="bash">
+<INLINE>
+#!/bin/bash
+bash /boot/config/plugins/audiobook-organizer/install.sh
+</INLINE>
+</FILE>
+
+<FILE Name="/boot/config/plugins/&name;/uninstall.sh">
+<INLINE>
+#!/bin/bash
+bash /usr/local/emhttp/plugins/audiobook-organizer/../../../lib/audiobook-organizer-daemon/../../../scripts/uninstall.sh
+</INLINE>
+</FILE>
+
+</PLUGIN>
