@@ -1,29 +1,22 @@
 #!/bin/bash
 set -e
-DAEMON_DIR=/usr/local/lib/audiobook-organizer-daemon
 PLUGIN_UI_DIR=/usr/local/emhttp/plugins/audiobook-organizer
 
 echo "Installing Audiobook Organizer..."
 
-mkdir -p $DAEMON_DIR
-cp -r daemon/* $DAEMON_DIR/
+# Build Docker image
+echo "Building Docker image (this may take a few minutes)..."
+docker build -t audiobook-organizer:latest daemon/
 
-python3 -m venv $DAEMON_DIR/venv
-$DAEMON_DIR/venv/bin/pip install --quiet \
-  --trusted-host pypi.org \
-  --trusted-host files.pythonhosted.org \
-  --upgrade pip
-$DAEMON_DIR/venv/bin/pip install --quiet \
-  --no-index \
-  --find-links $DAEMON_DIR/wheels \
-  -r $DAEMON_DIR/requirements.txt
-
+# Copy UI files
 mkdir -p $PLUGIN_UI_DIR
 cp -r ui/* $PLUGIN_UI_DIR/
 
+# Install rc script
 cp plugin/scripts/rc.audiobook-organizer /etc/rc.d/rc.audiobook-organizer
 chmod +x /etc/rc.d/rc.audiobook-organizer
 
+# Start daemon
 /etc/rc.d/rc.audiobook-organizer start
 
 echo "Installation complete. Visit Tools > Audiobook Organizer in Unraid."

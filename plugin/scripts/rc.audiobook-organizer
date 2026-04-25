@@ -1,40 +1,38 @@
 #!/bin/bash
 
-PLUGIN_DIR=/usr/local/emhttp/plugins/audiobook-organizer
-DAEMON_DIR=/usr/local/lib/audiobook-organizer-daemon
-VENV_PYTHON=$DAEMON_DIR/venv/bin/python
+CONTAINER=audiobook-organizer
+IMAGE=audiobook-organizer:latest
 LOG_DIR=/boot/config/plugins/audiobook-organizer
-PID_FILE=/var/run/audiobook-organizer.pid
 
 mkdir -p $LOG_DIR
 
 start() {
-  if [ -f $PID_FILE ] && kill -0 $(cat $PID_FILE) 2>/dev/null; then
-    echo "Audiobook Organizer already running (pid $(cat $PID_FILE))"
-    return
+  if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
+    docker start $CONTAINER
+  else
+    docker run -d \
+      --name $CONTAINER \
+      -p 127.0.0.1:7171:7171 \
+      -v $LOG_DIR:/config \
+      -v /mnt:/mnt \
+      -e DB_PATH=/config/state.db \
+      --restart unless-stopped \
+      $IMAGE
   fi
-  DB_PATH=$LOG_DIR/state.db \
-  $VENV_PYTHON -m uvicorn main:app \
-    --host 127.0.0.1 --port 7171 \
-    --log-level warning \
-    --app-dir $DAEMON_DIR \
-    >> $LOG_DIR/daemon.log 2>&1 &
-  echo $! > $PID_FILE
-  echo "Audiobook Organizer started (pid $(cat $PID_FILE))"
+  echo "Audiobook Organizer started"
 }
 
 stop() {
-  if [ -f $PID_FILE ]; then
-    kill $(cat $PID_FILE) 2>/dev/null
-    rm -f $PID_FILE
-    echo "Audiobook Organizer stopped"
-  fi
+  docker stop $CONTAINER 2>/dev/null || true
+  docker rm $CONTAINER 2>/dev/null || true
+  echo "Audiobook Organizer stopped"
 }
 
-restart() { stop; sleep 1; start; }
+restart() { stop; start; }
+
 status() {
-  if [ -f $PID_FILE ] && kill -0 $(cat $PID_FILE) 2>/dev/null; then
-    echo "Running (pid $(cat $PID_FILE))"
+  if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
+    echo "Running"
   else
     echo "Not running"
   fi
