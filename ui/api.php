@@ -23,6 +23,9 @@ switch ($action) {
     case 'scan_start':
         echo json_encode(daemon_post('/api/scan/start'));
         break;
+    case 'scan_cancel':
+        echo json_encode(daemon_post('/api/scan/cancel'));
+        break;
     case 'scan_status':
         echo json_encode(daemon_get('/api/scan/status'));
         break;

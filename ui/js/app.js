@@ -60,6 +60,7 @@ document.getElementById('cfg-save-btn')?.addEventListener('click', async () => {
     source_path: document.getElementById('cfg-source').value,
     dest_path: document.getElementById('cfg-dest').value,
     google_books_api_key: document.getElementById('cfg-gbkey').value,
+    anthropic_api_key: document.getElementById('cfg-anthropickey').value,
     stt_engine: sttSelect.value,
     whisper_model: document.getElementById('cfg-whisper-model').value,
     stt_api_key: document.getElementById('cfg-sttkey').value,
@@ -75,6 +76,10 @@ let pollInterval = null;
 document.getElementById('scan-start-btn')?.addEventListener('click', async () => {
   await API('scan_start', { body: '{}' });
   startPolling();
+});
+
+document.getElementById('scan-cancel-btn')?.addEventListener('click', async () => {
+  await API('scan_cancel', { body: '{}' });
 });
 
 document.getElementById('scan-undo-btn')?.addEventListener('click', async () => {
@@ -99,17 +104,22 @@ async function pollScanStatus() {
   const bar = document.getElementById('scan-bar');
   const current = document.getElementById('scan-current');
 
+  const cancelBtn = document.getElementById('scan-cancel-btn');
   if (state.status === 'scanning') {
     progress.style.display = '';
     results.style.display = 'none';
     current.textContent = state.current_book || '...';
     if (state.total_books > 0) bar.value = Math.round((state.processed_books / state.total_books) * 100);
-  } else if (state.status === 'awaiting_approval') {
+    if (cancelBtn) cancelBtn.style.display = '';
+  } else {
+    if (cancelBtn) cancelBtn.style.display = 'none';
+  }
+  if (state.status === 'awaiting_approval') {
     clearInterval(pollInterval);
     progress.style.display = 'none';
     results.style.display = '';
     renderResults(state.proposed_moves);
-  } else if (state.status === 'complete' || state.status === 'error') {
+  } else if (state.status === 'complete' || state.status === 'cancelled' || state.status === 'error') {
     clearInterval(pollInterval);
     progress.style.display = 'none';
     if (state.error) alert('Scan error: ' + state.error);

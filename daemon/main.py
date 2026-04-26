@@ -10,7 +10,7 @@ from typing import Optional
 from db import init_db, _db_path
 from config import load_config, save_config
 from models import Config, ApproveRequest, ScanStatus
-from scan_worker import load_scan_state, save_scan_state, run_scan
+from scan_worker import load_scan_state, save_scan_state, run_scan, request_cancel
 from file_mover import move_book_files, undo_moves, MoveRecord
 from tag_writer import write_tags_to_files
 
@@ -56,6 +56,14 @@ async def start_scan(background_tasks: BackgroundTasks):
         raise HTTPException(400, "Configure source and destination paths first")
     background_tasks.add_task(run_scan, cfg)
     return {"message": "Scan started"}
+
+@app.post("/api/scan/cancel")
+async def cancel_scan():
+    state = await load_scan_state()
+    if state.status != ScanStatus.SCANNING:
+        raise HTTPException(409, "No scan in progress")
+    request_cancel()
+    return {"message": "Cancel requested"}
 
 @app.post("/api/scan/approve")
 async def approve_moves(req: ApproveRequest):

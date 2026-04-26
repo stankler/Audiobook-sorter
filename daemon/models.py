@@ -20,12 +20,14 @@ class IdentificationSource(str, Enum):
     TAGS = "tags"
     FILENAME = "filename"
     STT = "stt"
+    CLAUDE = "claude"
     UNIDENTIFIED = "unidentified"
 
 class Config(BaseModel):
     source_path: str = ""
     dest_path: str = ""
     google_books_api_key: str = ""
+    anthropic_api_key: str = ""
     stt_engine: STTEngine = STTEngine.NONE
     whisper_model: WhisperModel = WhisperModel.SMALL
     stt_api_key: str = ""
@@ -58,6 +60,7 @@ class ScanStatus(str, Enum):
     AWAITING_APPROVAL = "awaiting_approval"
     MOVING = "moving"
     COMPLETE = "complete"
+    CANCELLED = "cancelled"
     ERROR = "error"
 
 class ScanState(BaseModel):

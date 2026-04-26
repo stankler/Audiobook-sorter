@@ -8,6 +8,7 @@
 .ao-form input[type=text] { width: 400px; padding: 4px; }
 .btn-primary { background: #2196F3; color: white; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; }
 .btn-secondary { background: #777; color: white; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; }
+.btn-danger { background: #e53935; color: white; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; }
 #results-table, #review-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
 #results-table th, #results-table td,
 #review-table th, #review-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }

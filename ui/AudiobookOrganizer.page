@@ -33,6 +33,7 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
       <tr><td>Source path</td><td><input id="cfg-source" type="text" value="<?= htmlspecialchars($config['source_path'] ?? '') ?>"> <button type="button" class="btn-browse" data-target="cfg-source">Browse</button></td></tr>
       <tr><td>Destination path</td><td><input id="cfg-dest" type="text" value="<?= htmlspecialchars($config['dest_path'] ?? '') ?>"> <button type="button" class="btn-browse" data-target="cfg-dest">Browse</button></td></tr>
       <tr><td>Google Books API key</td><td><input id="cfg-gbkey" type="text" value="<?= htmlspecialchars($config['google_books_api_key'] ?? '') ?>"></td></tr>
+      <tr><td>Anthropic API key</td><td><input id="cfg-anthropickey" type="text" value="<?= htmlspecialchars($config['anthropic_api_key'] ?? '') ?>"></td></tr>
       <tr><td>STT engine</td>
           <td><select id="cfg-stt">
             <option value="none">None</option>
@@ -59,6 +60,7 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
     <h2>Scan &amp; Organize</h2>
     <div id="scan-controls">
       <button id="scan-start-btn" class="btn-primary">Start Scan</button>
+      <button id="scan-cancel-btn" class="btn-danger" style="display:none">Cancel Scan</button>
       <button id="scan-undo-btn" class="btn-secondary">Undo Last Scan</button>
     </div>
     <div id="scan-progress" style="display:none">

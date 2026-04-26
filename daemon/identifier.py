@@ -8,8 +8,8 @@ from pipeline.filename_parser import parse_filename, parse_folder_name
 from pipeline.google_books import query_google_books
 from pipeline.stt_engine import transcribe_book, extract_title_from_transcript
 from pipeline.open_library import lookup_series
+from pipeline.claude_identifier import identify_with_claude
 from confidence import best_candidate
-from pathlib import Path
 
 logger = logging.getLogger("ao")
 
@@ -19,22 +19,56 @@ async def identify_book(group: BookGroup, cfg: Config) -> BookMatch | None:
     first_file = group.files[0]
     threshold = cfg.confidence_threshold
 
-    # Stage 1: ID3 tags
+    # Stage 1: Claude API
+    if cfg.anthropic_api_key:
+        claude_result = await identify_with_claude(
+            group.folder, group.files, cfg.source_path, cfg.anthropic_api_key, cfg.google_books_api_key
+        )
+        if claude_result:
+            candidates = await query_google_books(
+                claude_result["title"], claude_result["author"], cfg.google_books_api_key
+            )
+            best, score = best_candidate(
+                claude_result["title"], claude_result["author"], candidates, threshold
+            )
+            logger.info("STAGE1_CLAUDE candidates=%d best_score=%.2f", len(candidates), score)
+            if best:
+                match = await _fill_series(
+                    _make_match(best, score, IdentificationSource.CLAUDE), group, cfg
+                )
+                if match.series is None and claude_result.get("series"):
+                    match = match.model_copy(update={
+                        "series": claude_result["series"],
+                        "series_number": claude_result.get("series_number"),
+                    })
+                return match
+            # Claude found metadata but Google Books has no entry — trust Claude directly
+            if claude_result["title"] and claude_result["author"]:
+                logger.info("STAGE1_CLAUDE_DIRECT no GB match, using Claude result directly")
+                return BookMatch(
+                    title=claude_result["title"],
+                    author=claude_result["author"],
+                    series=claude_result.get("series"),
+                    series_number=claude_result.get("series_number"),
+                    confidence=0.75,
+                    source=IdentificationSource.CLAUDE,
+                )
+
+    # Stage 2: ID3 tags
     tags = read_tags(first_file)
-    logger.info("STAGE1 folder=%r tags_title=%r tags_author=%r", group.folder, tags.get("title"), tags.get("author"))
+    logger.info("STAGE2 folder=%r tags_title=%r tags_author=%r", group.folder, tags.get("title"), tags.get("author"))
     if tags["title"]:
         clean_title, tag_series, tag_series_num = _clean_tag_title(tags["title"])
         candidates = await query_google_books(clean_title, tags["author"], cfg.google_books_api_key)
         best, score = best_candidate(clean_title, tags["author"], candidates, threshold)
-        logger.info("STAGE1_RESULT clean_title=%r candidates=%d best_score=%.2f", clean_title, len(candidates), score)
+        logger.info("STAGE2_RESULT clean_title=%r candidates=%d best_score=%.2f", clean_title, len(candidates), score)
         if best:
             match = await _fill_series(_make_match(best, score, IdentificationSource.TAGS), group, cfg)
             if match.series is None and tag_series:
                 match = match.model_copy(update={"series": tag_series, "series_number": tag_series_num})
             return match
 
-    # Stage 2: Filename parsing
-    # Infer author from first path component relative to source (e.g. "Author/Book")
+    # Stage 3: Filename parsing
     path_author = _author_from_path(group.folder, cfg.source_path)
 
     fname_title, fname_author = parse_filename(Path(first_file).name)
@@ -45,15 +79,15 @@ async def identify_book(group: BookGroup, cfg: Config) -> BookMatch | None:
     if not fname_author:
         fname_author = path_author
 
-    logger.info("STAGE2 folder=%r query_title=%r query_author=%r", group.folder, fname_title, fname_author)
+    logger.info("STAGE3 folder=%r query_title=%r query_author=%r", group.folder, fname_title, fname_author)
     if fname_title and len(fname_title) > 3:
         candidates = await query_google_books(fname_title, fname_author, cfg.google_books_api_key)
         best, score = best_candidate(fname_title, fname_author, candidates, threshold)
-        logger.info("STAGE2_RESULT candidates=%d best_score=%.2f", len(candidates), score)
+        logger.info("STAGE3_RESULT candidates=%d best_score=%.2f", len(candidates), score)
         if best:
             return await _fill_series(_make_match(best, score, IdentificationSource.FILENAME), group, cfg)
 
-    # Stage 3: STT
+    # Stage 4: STT
     if cfg.stt_engine != STTEngine.NONE:
         transcript = await transcribe_book(
             first_file, cfg.stt_engine, cfg.whisper_model, cfg.stt_api_key
@@ -108,8 +142,9 @@ def _clean_tag_title(title: str) -> tuple[str, str | None, float | None]:
         clean = re.sub(r'\s*\([^)]*(?:Book\s*\d|#\d)[^)]*\)', '', clean).strip()
         return clean, series, series_num
 
-    # Pattern 2: "Title: Series, Book N"
-    m = re.match(r'^([^:]+):\s*(.+?),?\s*[Bb]ook\s*(\d+(?:\.\d+)?)', title)
+    # Pattern 2: "Title: Series, Book N" or "Title: Subtitle: Series, Book N"
+    # Greedy (.+) for title so "Dire: Time: The Dire Saga, Book 3" → title="Dire: Time", series="The Dire Saga"
+    m = re.match(r'^(.+):\s*([^:]+?),?\s*[Bb]ook\s*(\d+(?:\.\d+)?)\s*$', title)
     if m:
         clean, series_raw, series_num = m.group(1).strip(), m.group(2).strip(), float(m.group(3))
         # If series_raw captured extra preamble like "A X Novella (Series", take part after last "("

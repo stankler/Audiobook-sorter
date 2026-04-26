@@ -13,6 +13,11 @@ from db import _db_path
 
 logger = logging.getLogger("ao")
 
+_cancel_event = asyncio.Event()
+
+def request_cancel():
+    _cancel_event.set()
+
 async def load_scan_state() -> ScanState:
     async with aiosqlite.connect(_db_path()) as db:
         db.row_factory = aiosqlite.Row
@@ -31,6 +36,7 @@ async def save_scan_state(state: ScanState):
         await db.commit()
 
 async def run_scan(cfg: Config):
+    _cancel_event.clear()
     state = ScanState(status=ScanStatus.SCANNING, started_at=datetime.utcnow())
     await save_scan_state(state)
 
@@ -40,6 +46,13 @@ async def run_scan(cfg: Config):
         await save_scan_state(state)
 
         for group in groups:
+            if _cancel_event.is_set():
+                logger.info("SCAN_CANCELLED")
+                state.status = ScanStatus.CANCELLED
+                state.completed_at = datetime.utcnow()
+                await save_scan_state(state)
+                return
+
             state.current_book = group.folder
             state.processed_books += 1
             await save_scan_state(state)
