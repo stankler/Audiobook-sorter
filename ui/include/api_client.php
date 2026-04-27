@@ -10,22 +10,24 @@ function daemon_get(string $path): array {
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    if ($body === false || $code >= 400) return ['error' => "HTTP $code"];
+    if ($body === false) return ['error' => "curl failed"];
+    if ($code >= 400) return ['error' => "HTTP $code", 'detail' => json_decode($body, true)];
     return json_decode($body, true) ?? ['error' => 'Invalid JSON'];
 }
 
-function daemon_post(string $path, array $data = []): array {
+function daemon_post(string $path, array $data = [], int $timeout = 10): array {
     $ch = curl_init(DAEMON_URL . $path);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($data),
         CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_TIMEOUT => 10,
+        CURLOPT_TIMEOUT => $timeout,
     ]);
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    if ($body === false || $code >= 400) return ['error' => "HTTP $code"];
+    if ($body === false) return ['error' => "curl failed"];
+    if ($code >= 400) return ['error' => "HTTP $code", 'detail' => json_decode($body, true)];
     return json_decode($body, true) ?? ['error' => 'Invalid JSON'];
 }

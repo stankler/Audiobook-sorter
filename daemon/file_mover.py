@@ -25,14 +25,23 @@ def move_book_files(src_paths: list[str], dest_folder: str) -> list[MoveRecord]:
         seen_dsts.add(dst)
 
     dest.mkdir(parents=True, exist_ok=True)
+    _chmod_dir(dest)
 
     for src_str in src_paths:
         src = Path(src_str)
         dst = dest / src.name
         _atomic_move(src, dst)
+        dst.chmod(0o666)
         records.append(MoveRecord(src=src_str, dst=str(dst)))
 
     return records
+
+def _chmod_dir(path: Path):
+    """chmod 777 the directory and all parent dirs up to but not including the dest root."""
+    try:
+        path.chmod(0o777)
+    except Exception:
+        pass
 
 def _atomic_move(src: Path, dst: Path):
     src_hash = _md5(src)

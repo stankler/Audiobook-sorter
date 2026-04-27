@@ -5,43 +5,6 @@ Icon="music"
 <?php
 require_once '/usr/local/emhttp/plugins/audiobook-organizer/include/api_client.php';
 
-if (isset($_GET['action'])) {
-    header('Content-Type: application/json');
-    switch ($_GET['action']) {
-        case 'config_get':
-            echo json_encode(daemon_get('/api/config'));
-            break;
-        case 'config_save':
-            $data = json_decode(file_get_contents('php://input'), true);
-            echo json_encode(daemon_post('/api/config', $data));
-            break;
-        case 'scan_start':
-            echo json_encode(daemon_post('/api/scan/start'));
-            break;
-        case 'scan_status':
-            echo json_encode(daemon_get('/api/scan/status'));
-            break;
-        case 'scan_approve':
-            $data = json_decode(file_get_contents('php://input'), true);
-            echo json_encode(daemon_post('/api/scan/approve', $data));
-            break;
-        case 'scan_undo':
-            echo json_encode(daemon_post('/api/scan/undo'));
-            break;
-        case 'manual_review':
-            echo json_encode(daemon_get('/api/manual-review'));
-            break;
-        case 'move_unidentified':
-            $id = $_GET['id'] ?? '';
-            echo json_encode(daemon_post("/api/manual-review/{$id}/move-unidentified"));
-            break;
-        case 'logs':
-            echo json_encode(daemon_get('/api/logs'));
-            break;
-    }
-    exit;
-}
-
 $health = daemon_get('/api/health');
 $daemon_up = !isset($health['error']);
 $config = $daemon_up ? daemon_get('/api/config') : [];
@@ -67,9 +30,10 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
   <div id="tab-config" class="ao-tabcontent active">
     <h2>Configuration</h2>
     <table class="ao-form">
-      <tr><td>Source path</td><td><input id="cfg-source" type="text" value="<?= htmlspecialchars($config['source_path'] ?? '') ?>"></td></tr>
-      <tr><td>Destination path</td><td><input id="cfg-dest" type="text" value="<?= htmlspecialchars($config['dest_path'] ?? '') ?>"></td></tr>
+      <tr><td>Source path</td><td><input id="cfg-source" type="text" value="<?= htmlspecialchars($config['source_path'] ?? '') ?>"> <button type="button" class="btn-browse" data-target="cfg-source">Browse</button></td></tr>
+      <tr><td>Destination path</td><td><input id="cfg-dest" type="text" value="<?= htmlspecialchars($config['dest_path'] ?? '') ?>"> <button type="button" class="btn-browse" data-target="cfg-dest">Browse</button></td></tr>
       <tr><td>Google Books API key</td><td><input id="cfg-gbkey" type="text" value="<?= htmlspecialchars($config['google_books_api_key'] ?? '') ?>"></td></tr>
+      <tr><td>Anthropic API key</td><td><input id="cfg-anthropickey" type="text" value="<?= htmlspecialchars($config['anthropic_api_key'] ?? '') ?>"></td></tr>
       <tr><td>STT engine</td>
           <td><select id="cfg-stt">
             <option value="none">None</option>
@@ -96,6 +60,7 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
     <h2>Scan &amp; Organize</h2>
     <div id="scan-controls">
       <button id="scan-start-btn" class="btn-primary">Start Scan</button>
+      <button id="scan-cancel-btn" class="btn-danger" style="display:none">Cancel Scan</button>
       <button id="scan-undo-btn" class="btn-secondary">Undo Last Scan</button>
     </div>
     <div id="scan-progress" style="display:none">
@@ -103,23 +68,24 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
       <progress id="scan-bar" value="0" max="100"></progress>
     </div>
     <div id="scan-results" style="display:none">
-      <h3>Proposed Changes</h3>
-      <label><input type="checkbox" id="write-tags-toggle"> Write tags after move</label>
-      <table id="results-table">
-        <thead><tr><th>Select</th><th>Current path</th><th>Proposed path</th><th>Confidence</th><th>Source</th></tr></thead>
-        <tbody id="results-body"></tbody>
-      </table>
-      <button id="apply-btn" class="btn-primary">Apply Selected</button>
+      <p id="scan-complete-msg"></p>
+      <button id="go-to-review-btn" class="btn-primary" style="display:none">Go to Review tab →</button>
     </div>
   </div>
 
   <div id="tab-review" class="ao-tabcontent">
     <h2>Manual Review</h2>
-    <p>Books that could not be identified automatically.</p>
-    <table id="review-table">
-      <thead><tr><th>Folder</th><th>Files</th><th>Action</th></tr></thead>
-      <tbody id="review-body"></tbody>
-    </table>
+    <p>Select a candidate or search manually, then click Apply to move the files.</p>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+      <label><input type="checkbox" id="write-tags-toggle"> Write tags after move</label>
+      <button id="review-apply-btn" class="btn-primary" style="display:none">Apply Queued Moves (<span id="review-queued-count">0</span>)</button>
+    </div>
+    <div id="review-queued-list" style="display:none"></div>
+    <div id="review-move-progress" style="display:none">
+      <progress id="review-progress-bar" value="0" max="1"></progress>
+      <span id="review-progress-label"></span>
+    </div>
+    <div id="review-container"></div>
   </div>
 
   <div id="tab-logs" class="ao-tabcontent">
@@ -129,6 +95,18 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
   </div>
 </div>
 
+<div id="browse-modal" style="display:none">
+  <div id="browse-backdrop"></div>
+  <div id="browse-dialog">
+    <div id="browse-path"></div>
+    <ul id="browse-list"></ul>
+    <div id="browse-actions">
+      <button id="browse-select" class="btn-primary">Select This Folder</button>
+      <button id="browse-cancel" class="btn-secondary">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>var csrf_token = "<?=htmlspecialchars($var['csrf_token'] ?? '')?>";</script>
 <script src="/plugins/audiobook-organizer/js/app.js"></script>
 <?php endif; ?>
 </body>

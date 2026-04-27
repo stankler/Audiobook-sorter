@@ -23,6 +23,8 @@ async def query_google_books(
 
     cached = await _get_cache(cache_key)
     if cached is not None:
+        import logging
+        logging.getLogger("ao").info("GB_QUERY q=%r → %d results (cached)", query, len(cached))
         return cached
 
     global _last_request_time
@@ -40,7 +42,15 @@ async def query_google_books(
                 r.raise_for_status()
                 data = r.json()
                 items = data.get("items", [])
-        except Exception:
+                import logging
+                _log = logging.getLogger("ao")
+                _log.info("GB_QUERY q=%r → %d results", query, len(items))
+                for it in items[:3]:
+                    info = it.get("volumeInfo", {})
+                    _log.info("  GB_RESULT title=%r authors=%r", info.get("title"), info.get("authors"))
+        except Exception as e:
+            import logging
+            logging.getLogger("ao").warning("Google Books query failed q=%r: %s", query, e)
             return []
         finally:
             _last_request_time = time.time()

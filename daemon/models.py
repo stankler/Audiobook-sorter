@@ -19,13 +19,16 @@ class WhisperModel(str, Enum):
 class IdentificationSource(str, Enum):
     TAGS = "tags"
     FILENAME = "filename"
+    OPEN_LIBRARY = "open_library"
     STT = "stt"
+    CLAUDE = "claude"
     UNIDENTIFIED = "unidentified"
 
 class Config(BaseModel):
     source_path: str = ""
     dest_path: str = ""
     google_books_api_key: str = ""
+    anthropic_api_key: str = ""
     stt_engine: STTEngine = STTEngine.NONE
     whisper_model: WhisperModel = WhisperModel.SMALL
     stt_api_key: str = ""
@@ -44,6 +47,14 @@ class BookMatch(BaseModel):
     confidence: float
     source: IdentificationSource
 
+class Candidate(BaseModel):
+    title: str
+    author: str
+    series: Optional[str] = None
+    series_number: Optional[float] = None
+    source: str = ""
+    confidence: float = 0.0
+
 class ProposedMove(BaseModel):
     id: str
     book_group: BookGroup
@@ -51,6 +62,7 @@ class ProposedMove(BaseModel):
     proposed_path: Optional[str] = None
     approved: bool = True
     status: str = "pending"
+    candidates: List[Candidate] = []
 
 class ScanStatus(str, Enum):
     IDLE = "idle"
@@ -58,6 +70,7 @@ class ScanStatus(str, Enum):
     AWAITING_APPROVAL = "awaiting_approval"
     MOVING = "moving"
     COMPLETE = "complete"
+    CANCELLED = "cancelled"
     ERROR = "error"
 
 class ScanState(BaseModel):

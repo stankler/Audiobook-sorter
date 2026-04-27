@@ -8,10 +8,14 @@ import aiosqlite
 from models import ScanState, ScanStatus, ProposedMove, Config
 from scanner import scan_for_books
 from identifier import identify_book
-from path_builder import build_proposed_path
 from db import _db_path
 
 logger = logging.getLogger("ao")
+
+_cancel_event = asyncio.Event()
+
+def request_cancel():
+    _cancel_event.set()
 
 async def load_scan_state() -> ScanState:
     async with aiosqlite.connect(_db_path()) as db:
@@ -31,6 +35,7 @@ async def save_scan_state(state: ScanState):
         await db.commit()
 
 async def run_scan(cfg: Config):
+    _cancel_event.clear()
     state = ScanState(status=ScanStatus.SCANNING, started_at=datetime.utcnow())
     await save_scan_state(state)
 
@@ -40,33 +45,26 @@ async def run_scan(cfg: Config):
         await save_scan_state(state)
 
         for group in groups:
+            if _cancel_event.is_set():
+                logger.info("SCAN_CANCELLED")
+                state.status = ScanStatus.CANCELLED
+                state.completed_at = datetime.utcnow()
+                await save_scan_state(state)
+                return
+
             state.current_book = group.folder
             state.processed_books += 1
             await save_scan_state(state)
 
-            match = await identify_book(group, cfg)
+            candidates = await identify_book(group, cfg)
             move_id = str(uuid.uuid4())
+            logger.info("BOOK folder=%r  candidates=%d", group.folder, len(candidates))
+            state.manual_review.append(ProposedMove(
+                id=move_id, book_group=group,
+                candidates=candidates, match=None, proposed_path=None, approved=False,
+            ))
 
-            if match:
-                proposed_path = build_proposed_path(match, cfg.dest_path)
-                logger.info(
-                    "MATCH folder=%s source=%s confidence=%.2f proposed=%s",
-                    group.folder, match.source.value, match.confidence, proposed_path
-                )
-                proposed = ProposedMove(
-                    id=move_id, book_group=group, match=match,
-                    proposed_path=proposed_path, approved=True
-                )
-                state.proposed_moves.append(proposed)
-            else:
-                logger.info("NO_MATCH folder=%s → manual review", group.folder)
-                flagged = ProposedMove(
-                    id=move_id, book_group=group, match=None,
-                    proposed_path=None, approved=False
-                )
-                state.manual_review.append(flagged)
-
-        state.status = ScanStatus.AWAITING_APPROVAL
+        state.status = ScanStatus.COMPLETE
         state.completed_at = datetime.utcnow()
     except Exception as e:
         state.status = ScanStatus.ERROR

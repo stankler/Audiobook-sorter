@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  IMAGE: ghcr.io/stankler/audiobook-organizer
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./daemon
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.ref_name }}
+
+  package:
+    runs-on: ubuntu-latest
+    needs: docker
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build .txz package
+        run: |
+          VERSION=${{ github.ref_name }}
+          PKG=pkg
+
+          mkdir -p ${PKG}/usr/local/emhttp/plugins/audiobook-organizer/js
+          mkdir -p ${PKG}/usr/local/emhttp/plugins/audiobook-organizer/css
+          mkdir -p ${PKG}/usr/local/emhttp/plugins/audiobook-organizer/include
+          mkdir -p ${PKG}/etc/rc.d
+
+          cp ui/AudiobookOrganizer.page ${PKG}/usr/local/emhttp/plugins/audiobook-organizer/
+          cp ui/api.php                 ${PKG}/usr/local/emhttp/plugins/audiobook-organizer/
+          cp ui/js/app.js               ${PKG}/usr/local/emhttp/plugins/audiobook-organizer/js/
+          cp ui/css/style.css           ${PKG}/usr/local/emhttp/plugins/audiobook-organizer/css/
+          cp ui/include/api_client.php  ${PKG}/usr/local/emhttp/plugins/audiobook-organizer/include/
+
+          cp plugin/scripts/rc.audiobook-organizer ${PKG}/etc/rc.d/
+          chmod +x ${PKG}/etc/rc.d/rc.audiobook-organizer
+
+          tar -C ${PKG} -cJf audiobook-organizer-${VERSION}.txz .
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: audiobook-organizer-*.txz
+          generate_release_notes: true
