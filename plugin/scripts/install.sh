@@ -1,22 +1,25 @@
 #!/bin/bash
+# Called by the .plg post-install block — not used directly in normal installs.
+# Kept for manual/development installs.
 set -e
+
+IMAGE="ghcr.io/stankler/audiobook-organizer:latest"
 PLUGIN_UI_DIR=/usr/local/emhttp/plugins/audiobook-organizer
 
 echo "Installing Audiobook Organizer..."
 
-# Build Docker image
-echo "Building Docker image (this may take a few minutes)..."
-docker build -t audiobook-organizer:latest daemon/
+mkdir -p $PLUGIN_UI_DIR/js $PLUGIN_UI_DIR/css $PLUGIN_UI_DIR/include
+cp ui/AudiobookOrganizer.page $PLUGIN_UI_DIR/
+cp ui/api.php                 $PLUGIN_UI_DIR/
+cp ui/js/app.js               $PLUGIN_UI_DIR/js/
+cp ui/css/style.css           $PLUGIN_UI_DIR/css/
+cp ui/include/api_client.php  $PLUGIN_UI_DIR/include/
 
-# Copy UI files
-mkdir -p $PLUGIN_UI_DIR
-cp -r ui/* $PLUGIN_UI_DIR/
-
-# Install rc script
 cp plugin/scripts/rc.audiobook-organizer /etc/rc.d/rc.audiobook-organizer
 chmod +x /etc/rc.d/rc.audiobook-organizer
 
-# Start daemon
-/etc/rc.d/rc.audiobook-organizer start
+echo "Pulling Docker image ${IMAGE}..."
+docker pull "${IMAGE}"
 
-echo "Installation complete. Visit Tools > Audiobook Organizer in Unraid."
+/etc/rc.d/rc.audiobook-organizer start
+echo "Done. Open Tools > Audiobook Organizer."

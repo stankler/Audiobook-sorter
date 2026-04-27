@@ -1,29 +1,34 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
-  <!ENTITY name "audiobook-organizer">
-  <!ENTITY author "your-github-username">
-  <!ENTITY version "1.0.0">
-  <!ENTITY pluginURL "https://raw.githubusercontent.com/your-github-username/audiobook-organizer/main/plugin/audiobook-organizer.plg">
+  <!ENTITY name      "audiobook-organizer">
+  <!ENTITY author    "stankler">
+  <!ENTITY version   "2025.04.26">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/stankler/Audiobook-sorter/main/plugin/audiobook-organizer.plg">
+  <!ENTITY pluginDir "/boot/config/plugins/&name;">
+  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
 ]>
-<PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;">
+<PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;"
+        support="https://github.com/stankler/Audiobook-sorter/issues">
 
 <CHANGES>
-  <VERSION num="1.0.0">
-    Initial release. Multi-stage audiobook identification and organization.
-  </VERSION>
+###2025.04.26
+- Initial release.
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/&name;/install.sh" Run="bash">
-<INLINE>
-#!/bin/bash
-bash /boot/config/plugins/audiobook-organizer/install.sh
-</INLINE>
+<!-- Download and install UI files + rc script -->
+<FILE Name="&pluginDir;/audiobook-organizer-&version;.txz" Run="upgradepkg --install-new">
+<URL>https://github.com/stankler/Audiobook-sorter/releases/download/&version;/audiobook-organizer-&version;.txz</URL>
 </FILE>
 
-<FILE Name="/boot/config/plugins/&name;/uninstall.sh">
+<!-- Pull Docker image and start daemon -->
+<FILE Name="&pluginDir;/post-install.sh" Run="bash">
 <INLINE>
 #!/bin/bash
-bash /usr/local/emhttp/plugins/audiobook-organizer/../../../lib/audiobook-organizer-daemon/../../../scripts/uninstall.sh
+IMAGE="ghcr.io/stankler/audiobook-organizer:latest"
+echo "Pulling Audiobook Organizer Docker image..."
+docker pull "${IMAGE}" || { echo "ERROR: docker pull failed"; exit 1; }
+/etc/rc.d/rc.audiobook-organizer start
+echo "Audiobook Organizer installed. Open Tools > Audiobook Organizer."
 </INLINE>
 </FILE>
 

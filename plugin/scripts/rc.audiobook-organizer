@@ -1,21 +1,24 @@
 #!/bin/bash
 
 CONTAINER=audiobook-organizer
-IMAGE=audiobook-organizer:latest
-LOG_DIR=/boot/config/plugins/audiobook-organizer
+IMAGE=ghcr.io/stankler/audiobook-organizer:latest
+CONFIG_DIR=/boot/config/plugins/audiobook-organizer
 
-mkdir -p $LOG_DIR
+mkdir -p $CONFIG_DIR
 
 start() {
+  if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
+    echo "Audiobook Organizer already running"
+    return
+  fi
   if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     docker start $CONTAINER
   else
     docker run -d \
       --name $CONTAINER \
       -p 127.0.0.1:7171:7171 \
-      -v $LOG_DIR:/config \
+      -v $CONFIG_DIR:/config \
       -v /mnt:/mnt \
-      -e DB_PATH=/config/state.db \
       --restart unless-stopped \
       $IMAGE
   fi
@@ -38,4 +41,7 @@ status() {
   fi
 }
 
-case "$1" in start|stop|restart|status) $1 ;; *) echo "Usage: $0 {start|stop|restart|status}" ;; esac
+case "$1" in
+  start|stop|restart|status) $1 ;;
+  *) echo "Usage: $0 {start|stop|restart|status}" ;;
+esac
