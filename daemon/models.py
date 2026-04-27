@@ -19,6 +19,7 @@ class WhisperModel(str, Enum):
 class IdentificationSource(str, Enum):
     TAGS = "tags"
     FILENAME = "filename"
+    OPEN_LIBRARY = "open_library"
     STT = "stt"
     CLAUDE = "claude"
     UNIDENTIFIED = "unidentified"
@@ -46,6 +47,14 @@ class BookMatch(BaseModel):
     confidence: float
     source: IdentificationSource
 
+class Candidate(BaseModel):
+    title: str
+    author: str
+    series: Optional[str] = None
+    series_number: Optional[float] = None
+    source: str = ""
+    confidence: float = 0.0
+
 class ProposedMove(BaseModel):
     id: str
     book_group: BookGroup
@@ -53,6 +62,7 @@ class ProposedMove(BaseModel):
     proposed_path: Optional[str] = None
     approved: bool = True
     status: str = "pending"
+    candidates: List[Candidate] = []
 
 class ScanStatus(str, Enum):
     IDLE = "idle"

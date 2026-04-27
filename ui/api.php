@@ -39,6 +39,15 @@ switch ($action) {
     case 'manual_review':
         echo json_encode(daemon_get('/api/manual-review'));
         break;
+    case 'review_identify':
+        $id = $_GET['id'] ?? '';
+        $data = json_decode($_POST['payload'] ?? '{}', true) ?? [];
+        echo json_encode(daemon_post("/api/manual-review/{$id}/identify", $data));
+        break;
+    case 'transcribe':
+        $id = $_GET['id'] ?? '';
+        echo json_encode(daemon_post("/api/manual-review/{$id}/transcribe", [], 300));
+        break;
     case 'move_unidentified':
         $id = $_GET['id'] ?? '';
         echo json_encode(daemon_post("/api/manual-review/{$id}/move-unidentified"));

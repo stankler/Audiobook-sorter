@@ -11,6 +11,9 @@ from db import init_db, _db_path
 from config import load_config, save_config
 from models import Config, ApproveRequest, ScanStatus
 from scan_worker import load_scan_state, save_scan_state, run_scan, request_cancel
+from pipeline.google_books import query_google_books
+from pipeline.open_library import lookup_series
+from path_builder import build_proposed_path
 from file_mover import move_book_files, undo_moves, MoveRecord
 from tag_writer import write_tags_to_files
 
@@ -72,7 +75,7 @@ async def approve_moves(req: ApproveRequest):
         return {"moved": 0, "errors": []}
 
     state = await load_scan_state()
-    if state.status != ScanStatus.AWAITING_APPROVAL:
+    if state.status not in (ScanStatus.AWAITING_APPROVAL, ScanStatus.COMPLETE):
         raise HTTPException(400, "No scan awaiting approval")
 
     approved = [m for m in state.proposed_moves if m.id in req.approved_ids]
@@ -129,6 +132,34 @@ async def get_manual_review():
     state = await load_scan_state()
     return state.manual_review
 
+
+@app.post("/api/manual-review/{item_id}/identify")
+async def identify_manual(item_id: str, body: dict):
+    state = await load_scan_state()
+    item = next((m for m in state.manual_review if m.id == item_id), None)
+    if not item:
+        raise HTTPException(404, "Item not found")
+    cfg = await load_config()
+    from models import BookMatch, IdentificationSource
+    match = BookMatch(
+        title=body.get("title", "Unknown"),
+        author=body.get("author", "Unknown"),
+        series=body.get("series") or None,
+        series_number=float(body["series_number"]) if body.get("series_number") else None,
+        confidence=1.0,
+        source=IdentificationSource.UNIDENTIFIED,
+    )
+    proposed_path = build_proposed_path(match, cfg.dest_path)
+    from models import ProposedMove
+    item.match = match
+    item.proposed_path = proposed_path
+    item.approved = True
+    item.status = "pending"
+    state.manual_review = [m for m in state.manual_review if m.id != item_id]
+    state.proposed_moves.append(item)
+    await save_scan_state(state)
+    return {"proposed_path": proposed_path}
+
 @app.post("/api/manual-review/{item_id}/move-unidentified")
 async def move_to_unidentified(item_id: str):
     state = await load_scan_state()
@@ -158,6 +189,46 @@ async def browse(path: str = Query(default="/mnt")):
         raise HTTPException(403, "Permission denied")
     except FileNotFoundError:
         raise HTTPException(404, "Path not found")
+
+@app.post("/api/manual-review/{item_id}/transcribe")
+async def transcribe_item(item_id: str):
+    state = await load_scan_state()
+    item = next((m for m in state.manual_review if m.id == item_id), None)
+    if not item:
+        return {"error": "Item not found"}
+    cfg = await load_config()
+    engine_val = cfg.stt_engine.value if hasattr(cfg.stt_engine, 'value') else str(cfg.stt_engine)
+    if engine_val == "none":
+        return {"error": "No STT engine configured — set one in Configuration tab"}
+    if not item.book_group.files:
+        return {"error": "No files in book group"}
+    import asyncio
+    transcript = await asyncio.to_thread(_transcribe_first_minute, item.book_group.files[0], cfg)
+    return {"transcript": transcript}
+
+def _transcribe_first_minute(first_file: str, cfg) -> str:
+    import os
+    tmp_wav = None
+    try:
+        from stt.local_whisper import extract_audio_chunk
+        tmp_wav = extract_audio_chunk(first_file, 60)
+        engine = cfg.stt_engine.value if hasattr(cfg.stt_engine, 'value') else str(cfg.stt_engine)
+        model = cfg.whisper_model.value if hasattr(cfg.whisper_model, 'value') else str(cfg.whisper_model)
+        if engine == "local_whisper":
+            from stt.local_whisper import transcribe_local
+            return transcribe_local(tmp_wav, model) or ""
+        elif engine == "openai":
+            from stt.openai_stt import transcribe_openai
+            return transcribe_openai(tmp_wav, cfg.stt_api_key) or ""
+        elif engine == "google":
+            from stt.google_stt import transcribe_google_sync
+            return transcribe_google_sync(tmp_wav, cfg.stt_api_key) or ""
+        return f"Error: unknown engine {engine!r}"
+    except Exception as e:
+        return f"Error: {e}"
+    finally:
+        if tmp_wav and os.path.exists(tmp_wav):
+            os.unlink(tmp_wav)
 
 @app.get("/api/logs")
 async def get_logs():
