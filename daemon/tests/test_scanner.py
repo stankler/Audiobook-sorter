@@ -23,13 +23,19 @@ def test_two_separate_folders_are_two_books(tmp_path):
     books = scan_for_books(str(tmp_path))
     assert len(books) == 2
 
-def test_non_audio_files_ignored(tmp_path):
+def test_non_audio_files_included(tmp_path):
     make_fake_mp3(tmp_path / "book.mp3")
     (tmp_path / "cover.jpg").write_bytes(b"fake jpg")
     (tmp_path / "info.txt").write_text("notes")
     books = scan_for_books(str(tmp_path))
     assert len(books) == 1
-    assert all(f.endswith(".mp3") for f in books[0].files)
+    assert len(books[0].files) == 3
+    assert books[0].files[0].endswith(".mp3")
+
+def test_folder_without_audio_excluded(tmp_path):
+    (tmp_path / "cover.jpg").write_bytes(b"fake jpg")
+    books = scan_for_books(str(tmp_path))
+    assert len(books) == 0
 
 def test_nested_directory_scan(tmp_path):
     make_fake_mp3(tmp_path / "Author" / "Series" / "Book 1" / "01.mp3")

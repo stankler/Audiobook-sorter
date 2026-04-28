@@ -394,32 +394,46 @@ document.getElementById('review-apply-btn')?.addEventListener('click', async () 
   const label = document.getElementById('review-progress-label');
   btn.disabled = true;
   progress.style.display = '';
-  bar.max = _queuedMoves.length;
+
+  const totalFiles = _queuedMoves.reduce((sum, m) => sum + (m.book_group.files || []).length, 0);
+  bar.max = totalFiles;
   bar.value = 0;
 
-  let moved = 0, errors = 0;
+  let movedBooks = 0, errorBooks = 0, filesDone = 0;
   for (const m of [..._queuedMoves]) {
     const itemEl = document.getElementById(`qm-${m.id}`);
     if (itemEl) itemEl.classList.add('qm-moving');
-    label.textContent = `Moving ${moved + errors + 1} of ${_queuedMoves.length}…`;
+    const files = m.book_group.files || [];
+    let bookFailed = false;
 
-    const r = await API('scan_approve', { body: JSON.stringify({ approved_ids: [m.id], write_tags }) });
-    const data = await r.json();
-    const failed = data.error || (data.errors && data.errors.length);
+    for (let i = 0; i < files.length; i++) {
+      const fname = files[i].split('/').pop();
+      label.textContent = `File ${filesDone + 1}/${totalFiles}: ${fname}`;
+      const isLast = i === files.length - 1;
+      const r = await API('move_file', { body: JSON.stringify({ move_id: m.id, file_path: files[i], cleanup: isLast }) });
+      const data = await r.json();
+      if (data.error || data.detail) bookFailed = true;
+      filesDone++;
+      bar.value = filesDone;
+    }
+
+    // Finalize: write tags + update DB/state
+    const finalR = await API('scan_approve', { body: JSON.stringify({ approved_ids: [m.id], write_tags, already_moved: true }) });
+    const finalData = await finalR.json();
+    if (finalData.error || (finalData.errors && finalData.errors.length)) bookFailed = true;
 
     if (itemEl) {
       itemEl.classList.remove('qm-moving');
-      itemEl.classList.add(failed ? 'qm-error' : 'qm-done');
-      itemEl.querySelector('.qm-status').textContent = failed ? ' ✗' : ' ✓';
+      itemEl.classList.add(bookFailed ? 'qm-error' : 'qm-done');
+      itemEl.querySelector('.qm-status').textContent = bookFailed ? ' ✗' : ' ✓';
     }
-    if (failed) errors++; else moved++;
-    bar.value = moved + errors;
+    if (bookFailed) errorBooks++; else movedBooks++;
   }
 
   btn.disabled = false;
   progress.style.display = 'none';
   label.textContent = '';
-  alert(`Done. Moved: ${moved}. Errors: ${errors}`);
+  alert(`Done. Moved: ${movedBooks} book(s). Errors: ${errorBooks}`);
   updateQueuedCount();
 });
 

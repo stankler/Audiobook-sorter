@@ -95,13 +95,13 @@ async def identify_book(group: BookGroup, cfg: Config) -> list[Candidate]:
                 source=source, confidence=0.0,
             ))
 
-    # Deduplicate by title+author; when dropping a duplicate that has series data
-    # the survivor lacks, copy the series onto the survivor.
+    # Deduplicate by title+author, but always keep Claude candidates so they
+    # appear in the UI. For non-Claude dupes: copy series onto survivor if missing.
     seen: dict[tuple[str, str], int] = {}
     deduped: list[Candidate] = []
     for c in candidates:
         key = (c.title.lower().strip(), c.author.lower().strip())
-        if key in seen:
+        if key in seen and c.source != "Claude":
             existing = deduped[seen[key]]
             if c.series and not existing.series:
                 deduped[seen[key]] = existing.model_copy(update={

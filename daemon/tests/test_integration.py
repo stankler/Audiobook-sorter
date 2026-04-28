@@ -51,17 +51,26 @@ async def test_full_pipeline_scan_approve_move(client, tmp_path):
         for _ in range(50):
             r = await client.get("/api/scan/status")
             state = r.json()
-            if state["status"] in ("awaiting_approval", "error"):
+            if state["status"] in ("complete", "error"):
                 break
             await asyncio.sleep(0.2)
 
-    assert state["status"] == "awaiting_approval", f"Got status: {state['status']}, error: {state.get('error')}"
-    assert len(state["proposed_moves"]) == 1
-    move = state["proposed_moves"][0]
-    assert "Hobbit" in move["proposed_path"]
+    assert state["status"] == "complete", f"Got status: {state['status']}, error: {state.get('error')}"
+
+    r = await client.get("/api/manual-review")
+    items = r.json()
+    assert len(items) == 1
+    item_id = items[0]["id"]
+
+    r = await client.post(f"/api/manual-review/{item_id}/identify", json={
+        "title": "The Hobbit",
+        "author": "J.R.R. Tolkien",
+    })
+    identify_result = r.json()
+    assert "Hobbit" in identify_result["proposed_path"]
 
     r = await client.post("/api/scan/approve", json={
-        "approved_ids": [move["id"]],
+        "approved_ids": [item_id],
         "write_tags": False,
     })
     result = r.json()

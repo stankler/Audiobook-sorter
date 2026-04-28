@@ -9,12 +9,12 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Query
 from typing import Optional
 from db import init_db, _db_path
 from config import load_config, save_config
-from models import Config, ApproveRequest, ScanStatus
+from models import Config, ApproveRequest, MoveFileRequest, ScanStatus
 from scan_worker import load_scan_state, save_scan_state, run_scan, request_cancel
 from pipeline.google_books import query_google_books
 from pipeline.open_library import lookup_series
 from path_builder import build_proposed_path
-from file_mover import move_book_files, undo_moves, MoveRecord
+from file_mover import move_book_files, move_single_file, delete_empty_source_dirs, undo_moves, MoveRecord
 from tag_writer import write_tags_to_files
 
 _log_path = "/config/audiobook-organizer.log"
@@ -68,9 +68,28 @@ async def cancel_scan():
     request_cancel()
     return {"message": "Cancel requested"}
 
+@app.post("/api/scan/move-file")
+async def move_one_file(req: MoveFileRequest):
+    state = await load_scan_state()
+    move = next((m for m in state.proposed_moves if m.id == req.move_id), None)
+    if not move:
+        raise HTTPException(404, "Move not found")
+    if req.file_path not in move.book_group.files:
+        raise HTTPException(400, "File not in move")
+    if not move.proposed_path:
+        raise HTTPException(400, "No proposed path set")
+    try:
+        record = move_single_file(req.file_path, move.proposed_path)
+        if req.cleanup:
+            remaining = [f for f in move.book_group.files if f != req.file_path]
+            delete_empty_source_dirs([req.file_path] + remaining)
+        return {"src": record.src, "dst": record.dst}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
 @app.post("/api/scan/approve")
 async def approve_moves(req: ApproveRequest):
-    # Allow empty approve lists without status check (no-op)
     if not req.approved_ids:
         return {"moved": 0, "errors": []}
 
@@ -87,7 +106,12 @@ async def approve_moves(req: ApproveRequest):
     errors = []
     for move in approved:
         try:
-            records = move_book_files(move.book_group.files, move.proposed_path)
+            if req.already_moved:
+                # Files already moved individually; just write tags and record as moved
+                records = [MoveRecord(src=f, dst=str(Path(move.proposed_path) / Path(f).name))
+                           for f in move.book_group.files]
+            else:
+                records = move_book_files(move.book_group.files, move.proposed_path)
             all_records.extend(records)
             if req.write_tags and move.match:
                 write_tags_to_files([r.dst for r in records], move.match)

@@ -87,3 +87,9 @@ class ScanState(BaseModel):
 class ApproveRequest(BaseModel):
     approved_ids: List[str]
     write_tags: bool = False
+    already_moved: bool = False
+
+class MoveFileRequest(BaseModel):
+    move_id: str
+    file_path: str
+    cleanup: bool = False
