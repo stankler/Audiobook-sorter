@@ -71,10 +71,16 @@ async def cancel_scan():
 @app.post("/api/scan/move-file")
 async def move_one_file(req: MoveFileRequest):
     state = await load_scan_state()
+    proposed_ids = [m.id for m in state.proposed_moves]
+    review_ids   = [m.id for m in state.manual_review]
+    _ao_logger.info("MOVE_LOOKUP move_id=%r proposed=%r review=%r",
+                    req.move_id, proposed_ids, review_ids)
     move = next((m for m in state.proposed_moves if m.id == req.move_id), None)
     if not move:
+        _ao_logger.error("MOVE_404 move_id=%r not in proposed_moves", req.move_id)
         raise HTTPException(404, "Move not found")
     if req.file_path not in move.book_group.files:
+        _ao_logger.error("MOVE_400 file=%r not in group files=%r", req.file_path, move.book_group.files)
         raise HTTPException(400, "File not in move")
     if not move.proposed_path:
         raise HTTPException(400, "No proposed path set")
