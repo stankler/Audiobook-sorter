@@ -14,6 +14,10 @@ $plg = @file_get_contents('/boot/config/plugins/audiobook-organizer.plg');
 if ($plg && preg_match('/<!ENTITY version\s+"([^"]+)"/', $plg, $m)) {
     $plugin_version = $m[1];
 }
+
+$log_path = '/config/audiobook-organizer.log';
+$log_lines = file_exists($log_path) ? array_slice(file($log_path, FILE_IGNORE_NEW_LINES), -500) : [];
+$log_content = implode("\n", $log_lines);
 ?>
 <!DOCTYPE html>
 <html>
@@ -23,16 +27,21 @@ if ($plg && preg_match('/<!ENTITY version\s+"([^"]+)"/', $plg, $m)) {
 <body>
 <?php if (!$daemon_up): ?>
 <div class="error-banner">Audiobook Organizer daemon is not running. Check plugin logs.</div>
-<?php else: ?>
+<?php endif; ?>
 
 <div id="ao-app">
   <div class="ao-tabs">
+    <?php if ($daemon_up): ?>
     <button class="ao-tab active" data-tab="config">Configuration</button>
     <button class="ao-tab" data-tab="scan">Scan &amp; Organize</button>
     <button class="ao-tab" data-tab="review">Manual Review</button>
     <button class="ao-tab" data-tab="logs">Logs</button>
+    <?php else: ?>
+    <button class="ao-tab active" data-tab="logs">Logs</button>
+    <?php endif; ?>
   </div>
 
+  <?php if ($daemon_up): ?>
   <div id="tab-config" class="ao-tabcontent active">
     <h2>Configuration <small style="font-size:0.55em;color:#888;font-weight:normal">v<?= htmlspecialchars($plugin_version) ?></small></h2>
     <table class="ao-form">
@@ -93,11 +102,12 @@ if ($plg && preg_match('/<!ENTITY version\s+"([^"]+)"/', $plg, $m)) {
     </div>
     <div id="review-container"></div>
   </div>
+  <?php endif; ?>
 
-  <div id="tab-logs" class="ao-tabcontent">
-    <h2>Logs</h2>
+  <div id="tab-logs" class="ao-tabcontent<?= $daemon_up ? '' : ' active' ?>">
+    <h2>Logs <small style="font-size:0.55em;color:#888;font-weight:normal"><?= htmlspecialchars($log_path) ?></small></h2>
     <button id="logs-refresh-btn">Refresh</button>
-    <pre id="logs-content"></pre>
+    <pre id="logs-content"><?= htmlspecialchars($log_content) ?></pre>
   </div>
 </div>
 
@@ -113,7 +123,11 @@ if ($plg && preg_match('/<!ENTITY version\s+"([^"]+)"/', $plg, $m)) {
   </div>
 </div>
 <script>var csrf_token = "<?=htmlspecialchars($var['csrf_token'] ?? '')?>";</script>
+<?php if ($daemon_up): ?>
 <script src="/plugins/audiobook-organizer/js/app.js"></script>
 <?php endif; ?>
+<script>
+(function(){ const el = document.getElementById('logs-content'); if (el) el.scrollTop = el.scrollHeight; })();
+</script>
 </body>
 </html>
