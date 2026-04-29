@@ -8,6 +8,12 @@ require_once '/usr/local/emhttp/plugins/audiobook-organizer/include/api_client.p
 $health = daemon_get('/api/health');
 $daemon_up = !isset($health['error']);
 $config = $daemon_up ? daemon_get('/api/config') : [];
+
+$plugin_version = 'unknown';
+$plg = @file_get_contents('/boot/config/plugins/audiobook-organizer.plg');
+if ($plg && preg_match('/<!ENTITY version\s+"([^"]+)"/', $plg, $m)) {
+    $plugin_version = $m[1];
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -28,7 +34,7 @@ $config = $daemon_up ? daemon_get('/api/config') : [];
   </div>
 
   <div id="tab-config" class="ao-tabcontent active">
-    <h2>Configuration</h2>
+    <h2>Configuration <small style="font-size:0.55em;color:#888;font-weight:normal">v<?= htmlspecialchars($plugin_version) ?></small></h2>
     <table class="ao-form">
       <tr><td>Source path</td><td><input id="cfg-source" type="text" value="<?= htmlspecialchars($config['source_path'] ?? '') ?>"> <button type="button" class="btn-browse" data-target="cfg-source">Browse</button></td></tr>
       <tr><td>Destination path</td><td><input id="cfg-dest" type="text" value="<?= htmlspecialchars($config['dest_path'] ?? '') ?>"> <button type="button" class="btn-browse" data-target="cfg-dest">Browse</button></td></tr>
