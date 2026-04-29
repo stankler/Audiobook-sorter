@@ -14,7 +14,7 @@ from scan_worker import load_scan_state, save_scan_state, run_scan, request_canc
 from pipeline.google_books import query_google_books
 from pipeline.open_library import lookup_series
 from path_builder import build_proposed_path
-from file_mover import move_book_files, move_single_file, delete_empty_source_dirs, undo_moves, MoveRecord
+from file_mover import move_book_files, move_single_file, move_remaining_folder_contents, delete_empty_source_dirs, undo_moves, MoveRecord
 from tag_writer import write_tags_to_files
 
 _log_path = "/config/audiobook-organizer.log"
@@ -81,6 +81,7 @@ async def move_one_file(req: MoveFileRequest):
     try:
         record = move_single_file(req.file_path, move.proposed_path)
         if req.cleanup:
+            move_remaining_folder_contents(move.book_group.folder, move.proposed_path)
             remaining = [f for f in move.book_group.files if f != req.file_path]
             delete_empty_source_dirs([req.file_path] + remaining)
         return {"src": record.src, "dst": record.dst}

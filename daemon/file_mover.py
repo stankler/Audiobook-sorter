@@ -34,6 +34,10 @@ def move_book_files(src_paths: list[str], dest_folder: str) -> list[MoveRecord]:
         dst.chmod(0o666)
         records.append(MoveRecord(src=src_str, dst=str(dst)))
 
+    src_folders = {Path(p).parent for p in src_paths}
+    for folder in src_folders:
+        move_remaining_folder_contents(str(folder), dest_folder)
+
     delete_empty_source_dirs(src_paths)
     return records
 
@@ -49,6 +53,18 @@ def move_single_file(src_str: str, dest_folder: str) -> MoveRecord:
     _atomic_move(src, dst)
     dst.chmod(0o666)
     return MoveRecord(src=src_str, dst=str(dst))
+
+
+def move_remaining_folder_contents(src_folder: str, dest_folder: str):
+    src = Path(src_folder)
+    dest = Path(dest_folder)
+    if not src.exists() or not src.is_dir():
+        return
+    dest.mkdir(parents=True, exist_ok=True)
+    for item in list(src.iterdir()):
+        dst = dest / item.name
+        if not dst.exists():
+            shutil.move(str(item), str(dst))
 
 
 def delete_empty_source_dirs(src_paths: list[str]):
