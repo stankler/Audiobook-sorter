@@ -1,8 +1,11 @@
 # daemon/file_mover.py
 import shutil
 import hashlib
+import logging
 from pathlib import Path
 from dataclasses import dataclass
+
+log = logging.getLogger("ao")
 
 class MoveError(Exception):
     pass
@@ -46,11 +49,13 @@ def move_single_file(src_str: str, dest_folder: str) -> MoveRecord:
     src = Path(src_str)
     dest = Path(dest_folder)
     dst = dest / src.name
+    log.info("MOVE_FILE src=%r dst=%r src_exists=%s dst_exists=%s", str(src), str(dst), src.exists(), dst.exists())
     if dst.exists():
         raise MoveError(f"Destination already exists: {dst}")
     dest.mkdir(parents=True, exist_ok=True)
     _chmod_dir(dest)
     shutil.move(str(src), str(dst))
+    log.info("MOVE_FILE_OK src=%r dst=%r dst_exists=%s", str(src), str(dst), dst.exists())
     try:
         dst.chmod(0o666)
     except Exception:
@@ -61,13 +66,23 @@ def move_single_file(src_str: str, dest_folder: str) -> MoveRecord:
 def move_remaining_folder_contents(src_folder: str, dest_folder: str):
     src = Path(src_folder)
     dest = Path(dest_folder)
+    log.info("SWEEP src=%r exists=%s dest=%r", src_folder, src.exists(), dest_folder)
     if not src.exists() or not src.is_dir():
+        log.info("SWEEP_SKIP src missing or not dir")
         return
+    items = list(src.iterdir())
+    log.info("SWEEP_ITEMS count=%d items=%r", len(items), [i.name for i in items])
     dest.mkdir(parents=True, exist_ok=True)
-    for item in list(src.iterdir()):
+    for item in items:
         dst = dest / item.name
-        if not dst.exists():
+        if dst.exists():
+            log.info("SWEEP_SKIP_EXISTS item=%r", item.name)
+            continue
+        try:
             shutil.move(str(item), str(dst))
+            log.info("SWEEP_MOVED item=%r", item.name)
+        except Exception as e:
+            log.error("SWEEP_ERROR item=%r error=%r", item.name, str(e))
 
 
 def delete_empty_source_dirs(src_paths: list[str]):

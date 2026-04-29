@@ -78,6 +78,9 @@ async def move_one_file(req: MoveFileRequest):
         raise HTTPException(400, "File not in move")
     if not move.proposed_path:
         raise HTTPException(400, "No proposed path set")
+    _ao_logger.info("MOVE_REQ file=%r cleanup=%s folder=%r proposed=%r files_in_group=%d",
+                    req.file_path, req.cleanup, move.book_group.folder,
+                    move.proposed_path, len(move.book_group.files))
     try:
         record = move_single_file(req.file_path, move.proposed_path)
         if req.cleanup:
@@ -86,6 +89,7 @@ async def move_one_file(req: MoveFileRequest):
             delete_empty_source_dirs([req.file_path] + remaining)
         return {"src": record.src, "dst": record.dst}
     except Exception as e:
+        _ao_logger.error("MOVE_ERR file=%r error=%r", req.file_path, str(e))
         raise HTTPException(500, str(e))
 
 
