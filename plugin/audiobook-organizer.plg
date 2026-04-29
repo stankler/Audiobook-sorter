@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "audiobook-organizer">
   <!ENTITY author    "stankler">
-  <!ENTITY version   "2025.04.26">
+  <!ENTITY version   "2026.04.29">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/stankler/Audiobook-sorter/main/plugin/audiobook-organizer.plg">
   <!ENTITY pluginDir "/boot/config/plugins/&name;">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
@@ -11,6 +11,12 @@
         support="https://github.com/stankler/Audiobook-sorter/issues">
 
 <CHANGES>
+###2026.04.29
+- Per-file move progress tracking in UI
+- All files in book folder now moved (covers, NFOs, etc.), not just audio
+- Empty source directories cleaned up after moves
+- Claude candidate dedup fix
+
 ###2025.04.26
 - Initial release.
 </CHANGES>
