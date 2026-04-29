@@ -467,7 +467,11 @@ async function openBrowser(targetId, startPath) {
 async function browseLoad(path) {
   const r = await API(`browse&path=${encodeURIComponent(path)}`);
   const data = await r.json();
-  if (data.error) { alert('Browse error: ' + data.error); return; }
+  if (data.detail || data.error) {
+    if (path !== '/mnt') { await browseLoad('/mnt'); return; }
+    alert('Browse error: ' + (data.detail || data.error));
+    return;
+  }
 
   document.getElementById('browse-path').textContent = data.path;
   document.getElementById('browse-select').onclick = () => {
