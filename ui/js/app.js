@@ -280,8 +280,8 @@ function renderReviewItem(container, item, authorSeriesMap = {}) {
   attachDropdown(div.querySelector(`#rv-author-${id}`), authors, updatePath);
   attachDropdown(div.querySelector(`#rv-series-${id}`), seriesOpts, updatePath);
 
-  // Auto-fill from best non-parsed candidate
-  const best = candidates.find(c => c.confidence > 0);
+  // Auto-fill: prefer Claude candidate (has series data), fall back to best by confidence
+  const best = candidates.find(c => c.source === 'Claude') || candidates.find(c => c.confidence > 0);
   if (best) {
     div.querySelector(`#rv-title-${id}`).value = best.title;
     div.querySelector(`#rv-author-${id}`).value = best.author;

@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "audiobook-organizer">
   <!ENTITY author    "stankler">
-  <!ENTITY version   "2026.04.29.3">
+  <!ENTITY version   "2026.04.29.4">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/stankler/Audiobook-sorter/main/plugin/audiobook-organizer.plg">
   <!ENTITY pluginDir "/boot/config/plugins/&name;">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
@@ -11,6 +11,9 @@
         support="https://github.com/stankler/Audiobook-sorter/issues">
 
 <CHANGES>
+###2026.04.29.4
+- Auto-populate Claude series results as default in review fields
+
 ###2026.04.29.3
 - Move entire source folder contents (subdirs, artwork, etc.), not just scanned files
 
