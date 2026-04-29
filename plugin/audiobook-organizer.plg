@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "audiobook-organizer">
   <!ENTITY author    "stankler">
-  <!ENTITY version   "2026.04.29.4">
+  <!ENTITY version   "2026.04.29.5">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/stankler/Audiobook-sorter/main/plugin/audiobook-organizer.plg">
   <!ENTITY pluginDir "/boot/config/plugins/&name;">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
@@ -11,8 +11,10 @@
         support="https://github.com/stankler/Audiobook-sorter/issues">
 
 <CHANGES>
-###2026.04.29.4
-- Auto-populate Claude series results as default in review fields
+###2026.04.29.5
+- Fix files not moving: per-file moves were timing out (10s curl limit vs MD5+copy of large audiobooks)
+- Switch move_single_file to shutil.move (same-fs = instant rename; no MD5 overhead)
+- Increase move_file API timeout to 600s for cross-filesystem moves
 
 ###2026.04.29.3
 - Move entire source folder contents (subdirs, artwork, etc.), not just scanned files

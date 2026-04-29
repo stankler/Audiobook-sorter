@@ -35,7 +35,7 @@ switch ($action) {
         break;
     case 'move_file':
         $data = json_decode($_POST['payload'] ?? '{}', true) ?? [];
-        echo json_encode(daemon_post('/api/scan/move-file', $data));
+        echo json_encode(daemon_post('/api/scan/move-file', $data, 600));
         break;
     case 'scan_undo':
         echo json_encode(daemon_post('/api/scan/undo'));

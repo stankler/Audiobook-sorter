@@ -50,8 +50,11 @@ def move_single_file(src_str: str, dest_folder: str) -> MoveRecord:
         raise MoveError(f"Destination already exists: {dst}")
     dest.mkdir(parents=True, exist_ok=True)
     _chmod_dir(dest)
-    _atomic_move(src, dst)
-    dst.chmod(0o666)
+    shutil.move(str(src), str(dst))
+    try:
+        dst.chmod(0o666)
+    except Exception:
+        pass
     return MoveRecord(src=src_str, dst=str(dst))
 
 
