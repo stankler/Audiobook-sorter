@@ -230,7 +230,7 @@ async def browse(path: str = Query(default="/mnt")):
         raise HTTPException(404, "Path not found")
 
 @app.post("/api/manual-review/{item_id}/transcribe")
-async def transcribe_item(item_id: str, body: dict = {}):
+async def transcribe_item(item_id: str, body: Optional[dict] = None):
     import re, asyncio
     state = await load_scan_state()
     item = next((m for m in state.manual_review if m.id == item_id), None)
@@ -243,7 +243,7 @@ async def transcribe_item(item_id: str, body: dict = {}):
     if not item.book_group.files:
         return {"error": "No files in book group"}
 
-    file_path = body.get("file_path")
+    file_path = (body or {}).get("file_path")
     if file_path:
         if file_path not in item.book_group.files:
             raise HTTPException(400, "File not in book group")
