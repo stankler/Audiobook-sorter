@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "audiobook-organizer">
   <!ENTITY author    "stankler">
-  <!ENTITY version   "2026.04.30">
+  <!ENTITY version   "2026.04.30.1">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/stankler/Audiobook-sorter/main/plugin/audiobook-organizer.plg">
   <!ENTITY pluginDir "/boot/config/plugins/&name;">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
@@ -11,6 +11,10 @@
         support="https://github.com/stankler/Audiobook-sorter/issues">
 
 <CHANGES>
+###2026.04.30.1
+- Remove moved books from queue list immediately
+- rc script recreates container on image change (fixes stale daemon after update)
+
 ###2026.04.30
 - Show actual error details in move failure alert
 
