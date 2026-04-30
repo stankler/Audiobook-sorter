@@ -7,20 +7,28 @@ CONFIG_DIR=/boot/config/plugins/audiobook-organizer
 mkdir -p $CONFIG_DIR
 
 start() {
-  # Remove stale container if its image differs from the current IMAGE
   if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     RUNNING_IMAGE=$(docker inspect --format '{{.Config.Image}}' $CONTAINER 2>/dev/null)
     if [ "$RUNNING_IMAGE" != "$IMAGE" ]; then
       echo "Image changed ($RUNNING_IMAGE → $IMAGE), recreating container..."
       docker stop $CONTAINER 2>/dev/null || true
       docker rm $CONTAINER
-    elif docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
-      echo "Audiobook Organizer already running"
-      return
     else
-      docker start $CONTAINER
-      echo "Audiobook Organizer started"
-      return
+      # Same image name — check if digest changed (image was re-pulled)
+      RUNNING_ID=$(docker inspect --format '{{.Image}}' $CONTAINER 2>/dev/null)
+      LATEST_ID=$(docker image inspect --format '{{.Id}}' "$IMAGE" 2>/dev/null)
+      if [ -n "$LATEST_ID" ] && [ "$RUNNING_ID" != "$LATEST_ID" ]; then
+        echo "Image updated, recreating container..."
+        docker stop $CONTAINER 2>/dev/null || true
+        docker rm $CONTAINER
+      elif docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
+        echo "Audiobook Organizer already running (up to date)"
+        return
+      else
+        docker start $CONTAINER
+        echo "Audiobook Organizer started"
+        return
+      fi
     fi
   fi
   docker run -d \

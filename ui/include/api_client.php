@@ -20,7 +20,7 @@ function daemon_post(string $path, array $data = [], int $timeout = 10): array {
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($data),
+        CURLOPT_POSTFIELDS => json_encode($data ?: new stdClass()),
         CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
         CURLOPT_TIMEOUT => $timeout,
     ]);
