@@ -331,7 +331,21 @@ function renderReviewItem(container, item, authorSeriesMap = {}) {
     btn.disabled = false;
     btn.textContent = 'Transcribe (1 min)';
     const errMsg = data.error || data.detail;
-    log.textContent = errMsg ? 'Error: ' + errMsg : (data.transcript || '(no transcript)');
+    if (errMsg) {
+      log.textContent = 'Error: ' + errMsg;
+      return;
+    }
+    let logText = data.transcript || '(no transcript)';
+    if (data.stt_title) {
+      logText += `\n\n▶ Parsed: "${data.stt_title}"${data.stt_author ? ' by ' + data.stt_author : ''}`;
+      logText += `\n▶ Added ${data.new_candidates || 0} candidate(s) from GB/OL`;
+    }
+    log.textContent = logText;
+
+    // If new candidates arrived, reload the review to refresh dropdowns
+    if (data.new_candidates > 0) {
+      await loadReview();
+    }
   });
 
   container.appendChild(div);

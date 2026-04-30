@@ -231,6 +231,7 @@ async def browse(path: str = Query(default="/mnt")):
 
 @app.post("/api/manual-review/{item_id}/transcribe")
 async def transcribe_item(item_id: str):
+    import re, asyncio
     state = await load_scan_state()
     item = next((m for m in state.manual_review if m.id == item_id), None)
     if not item:
@@ -241,9 +242,36 @@ async def transcribe_item(item_id: str):
         return {"error": "No STT engine configured — set one in Configuration tab"}
     if not item.book_group.files:
         return {"error": "No files in book group"}
-    import asyncio
+
     transcript = await asyncio.to_thread(_transcribe_first_minute, item.book_group.files[0], cfg)
-    return {"transcript": transcript}
+
+    # Parse "presents <Title> by <Author>" from transcript
+    stt_title = stt_author = None
+    m = re.search(r'\bpresents\s+(.+?)\s+by\b', transcript, re.IGNORECASE)
+    if m:
+        stt_title = m.group(1).strip().rstrip('.,;:')
+        after_by = transcript[m.end():].strip()
+        author_m = re.match(r'([A-Za-z][^.,\n]{2,60})', after_by)
+        if author_m:
+            stt_author = author_m.group(1).strip().rstrip('.,;:')
+
+    new_candidates = []
+    if stt_title:
+        from identifier import _gb_candidate, _ol_candidate
+        from pipeline.open_library import search_books as ol_search_books
+        gb_raw = await query_google_books(stt_title, stt_author or "", cfg.google_books_api_key)
+        for r in gb_raw[:5]:
+            new_candidates.append(_gb_candidate(r, "GB_STT", stt_title, stt_author, None, None))
+        ol_raw = await ol_search_books(stt_title, stt_author)
+        for r in ol_raw[:5]:
+            new_candidates.append(_ol_candidate(r, "OL_STT", None, None))
+
+    if new_candidates:
+        # Prepend STT candidates so they appear first
+        item.candidates = new_candidates + item.candidates
+        await save_scan_state(state)
+
+    return {"transcript": transcript, "stt_title": stt_title, "stt_author": stt_author, "new_candidates": len(new_candidates)}
 
 def _transcribe_first_minute(first_file: str, cfg) -> str:
     import os
