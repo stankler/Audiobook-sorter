@@ -140,11 +140,15 @@ async def approve_moves(req: ApproveRequest):
             )
             await db.commit()
 
+    # Remove successfully moved items from proposed_moves
+    moved_ids = {m.id for m in approved if m.status == "moved"}
+    state.proposed_moves = [m for m in state.proposed_moves if m.id not in moved_ids]
+
     state.status = ScanStatus.COMPLETE if not errors else ScanStatus.ERROR
     if errors:
         state.error = f"{len(errors)} move(s) failed"
     await save_scan_state(state)
-    return {"moved": len([m for m in approved if m.status == "moved"]), "errors": errors}
+    return {"moved": len(moved_ids), "errors": errors}
 
 @app.post("/api/scan/undo")
 async def undo_last_scan():

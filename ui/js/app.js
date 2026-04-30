@@ -434,9 +434,13 @@ document.getElementById('review-apply-btn')?.addEventListener('click', async () 
     }
 
     if (itemEl) {
-      itemEl.classList.remove('qm-moving');
-      itemEl.classList.add(bookFailed ? 'qm-error' : 'qm-done');
-      itemEl.querySelector('.qm-status').textContent = bookFailed ? ' ✗' : ' ✓';
+      if (bookFailed) {
+        itemEl.classList.remove('qm-moving');
+        itemEl.classList.add('qm-error');
+        itemEl.querySelector('.qm-status').textContent = ' ✗';
+      } else {
+        itemEl.remove();
+      }
     }
     if (bookFailed) errorBooks++; else movedBooks++;
   }
