@@ -400,6 +400,7 @@ document.getElementById('review-apply-btn')?.addEventListener('click', async () 
   bar.value = 0;
 
   let movedBooks = 0, errorBooks = 0, filesDone = 0;
+  const allErrors = [];
   for (const m of [..._queuedMoves]) {
     const itemEl = document.getElementById(`qm-${m.id}`);
     if (itemEl) itemEl.classList.add('qm-moving');
@@ -410,17 +411,27 @@ document.getElementById('review-apply-btn')?.addEventListener('click', async () 
       const fname = files[i].split('/').pop();
       label.textContent = `File ${filesDone + 1}/${totalFiles}: ${fname}`;
       const isLast = i === files.length - 1;
-      const r = await API('move_file', { body: JSON.stringify({ move_id: m.id, file_path: files[i], cleanup: isLast }) });
-      const data = await r.json();
-      if (data.error || data.detail) bookFailed = true;
+      try {
+        const r = await API('move_file', { body: JSON.stringify({ move_id: m.id, file_path: files[i], cleanup: isLast }) });
+        const data = await r.json();
+        const errMsg = data.error || (data.detail && (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)));
+        if (errMsg) { bookFailed = true; allErrors.push(`${fname}: ${errMsg}`); }
+      } catch (e) {
+        bookFailed = true; allErrors.push(`${fname}: ${e.message}`);
+      }
       filesDone++;
       bar.value = filesDone;
     }
 
     // Finalize: write tags + update DB/state
-    const finalR = await API('scan_approve', { body: JSON.stringify({ approved_ids: [m.id], write_tags, already_moved: true }) });
-    const finalData = await finalR.json();
-    if (finalData.error || (finalData.errors && finalData.errors.length)) bookFailed = true;
+    try {
+      const finalR = await API('scan_approve', { body: JSON.stringify({ approved_ids: [m.id], write_tags, already_moved: true }) });
+      const finalData = await finalR.json();
+      const finalErr = finalData.error || (finalData.errors && finalData.errors.length ? finalData.errors.join('; ') : null);
+      if (finalErr) { bookFailed = true; allErrors.push(`finalize ${m.id.slice(0,8)}: ${finalErr}`); }
+    } catch (e) {
+      bookFailed = true; allErrors.push(`finalize: ${e.message}`);
+    }
 
     if (itemEl) {
       itemEl.classList.remove('qm-moving');
@@ -433,7 +444,8 @@ document.getElementById('review-apply-btn')?.addEventListener('click', async () 
   btn.disabled = false;
   progress.style.display = 'none';
   label.textContent = '';
-  alert(`Done. Moved: ${movedBooks} book(s). Errors: ${errorBooks}`);
+  const summary = `Done. Moved: ${movedBooks}. Errors: ${errorBooks}`;
+  alert(allErrors.length ? `${summary}\n\n${allErrors.join('\n')}` : summary);
   updateQueuedCount();
 });
 
