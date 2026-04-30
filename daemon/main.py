@@ -230,7 +230,7 @@ async def browse(path: str = Query(default="/mnt")):
         raise HTTPException(404, "Path not found")
 
 @app.post("/api/manual-review/{item_id}/transcribe")
-async def transcribe_item(item_id: str):
+async def transcribe_item(item_id: str, body: dict = {}):
     import re, asyncio
     state = await load_scan_state()
     item = next((m for m in state.manual_review if m.id == item_id), None)
@@ -243,7 +243,15 @@ async def transcribe_item(item_id: str):
     if not item.book_group.files:
         return {"error": "No files in book group"}
 
-    transcript = await asyncio.to_thread(_transcribe_first_minute, item.book_group.files[0], cfg)
+    file_path = body.get("file_path")
+    if file_path:
+        if file_path not in item.book_group.files:
+            raise HTTPException(400, "File not in book group")
+        chosen_file = file_path
+    else:
+        chosen_file = item.book_group.files[0]
+
+    transcript = await asyncio.to_thread(_transcribe_first_minute, chosen_file, cfg)
 
     # Parse "presents <Title> by <Author>" from transcript
     stt_title = stt_author = None

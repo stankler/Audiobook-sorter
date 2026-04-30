@@ -25,6 +25,7 @@
 .review-no-match { font-size: 12px; color: #888; margin: 4px 0 8px; }
 .btn-toggle-cands { background: none; border: none; color: #2196F3; cursor: pointer; font-size: 12px; padding: 2px 0; margin-bottom: 6px; }
 .review-stt-log { background: #111; color: #eee; font-size: 12px; padding: 10px; border-radius: 4px; margin-top: 8px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+.stt-file-pick { font-size: 13px; padding: 6px 8px; border-radius: 4px; border: 1px solid #ccc; max-width: 280px; }
 .review-path-preview { font-family: monospace; font-size: 12px; color: #2e7d32; background: #f1f8e9; border: 1px solid #c5e1a5; border-radius: 3px; padding: 6px 10px; margin-bottom: 8px; word-break: break-all; }
 #review-queued-list { margin: 8px 0 16px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
 .queued-move-item { padding: 6px 10px; font-size: 12px; font-family: monospace; border-bottom: 1px solid #f0f0f0; display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }

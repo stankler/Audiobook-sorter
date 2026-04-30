@@ -253,6 +253,15 @@ function renderReviewItem(container, item, authorSeriesMap = {}) {
     <div class="review-path-preview" id="rv-path-${esc(id)}"></div>
     <div class="review-actions">
       <button class="btn-primary" data-action="apply">Apply</button>
+      ${(() => {
+        const audioExts = new Set(['.mp3','.m4b','.m4a','.flac','.ogg','.opus','.aac','.wav']);
+        const af = item.book_group.files.filter(f => audioExts.has(f.slice(f.lastIndexOf('.')).toLowerCase()));
+        if (af.length > 1) {
+          const opts = af.map(f => `<option value="${esc(f)}">${esc(f.split('/').pop())}</option>`).join('');
+          return `<select id="rv-stt-pick-${esc(id)}" class="stt-file-pick">${opts}</select>`;
+        }
+        return '';
+      })()}
       <button class="btn-secondary" data-action="stt">Transcribe (1 min)</button>
       <button class="btn-secondary" data-action="skip">Skip</button>
     </div>
@@ -322,11 +331,19 @@ function renderReviewItem(container, item, authorSeriesMap = {}) {
   div.querySelector('[data-action=stt]').addEventListener('click', async () => {
     const btn = div.querySelector('[data-action=stt]');
     const log = div.querySelector(`#rv-stt-${id}`);
+    const audioExts = new Set(['.mp3','.m4b','.m4a','.flac','.ogg','.opus','.aac','.wav']);
+    const audioFiles = item.book_group.files.filter(f => audioExts.has(f.slice(f.lastIndexOf('.')).toLowerCase()));
+    let chosenFile = null;
+    if (audioFiles.length > 1) {
+      const sel = div.querySelector(`#rv-stt-pick-${id}`);
+      chosenFile = sel ? sel.value : audioFiles[0];
+    }
     btn.disabled = true;
     btn.textContent = 'Transcribing…';
     log.style.display = '';
     log.textContent = 'Running STT on first 60 seconds…';
-    const r = await API(`transcribe&id=${id}`, { body: '{}' });
+    const body = chosenFile ? JSON.stringify({ file_path: chosenFile }) : '{}';
+    const r = await API(`transcribe&id=${id}`, { body });
     const data = await r.json();
     btn.disabled = false;
     btn.textContent = 'Transcribe (1 min)';
