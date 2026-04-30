@@ -255,7 +255,7 @@ async def transcribe_item(item_id: str, body: dict = {}):
 
     # Parse "presents <Title> by <Author>" from transcript
     stt_title = stt_author = None
-    m = re.search(r'\bpresents\s+(.+?)\s+by\b', transcript, re.IGNORECASE)
+    m = re.search(r'\bpresents\s+(.+?)\s+(?:written\s+by|narrated\s+by|read\s+by|performed\s+by|by)\b', transcript, re.IGNORECASE)
     if m:
         stt_title = m.group(1).strip().rstrip('.,;:')
         after_by = transcript[m.end():].strip()
