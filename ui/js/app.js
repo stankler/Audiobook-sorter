@@ -353,9 +353,11 @@ function renderReviewItem(container, item, authorSeriesMap = {}) {
       return;
     }
     let logText = data.transcript || '(no transcript)';
+    if (data.warning) logText += `\n\n⚠ ${data.warning}`;
     if (data.stt_title) {
-      logText += `\n\n▶ Parsed: "${data.stt_title}"${data.stt_author ? ' by ' + data.stt_author : ''}`;
-      logText += `\n▶ Added ${data.new_candidates || 0} candidate(s) from GB/OL`;
+      const seriesPart = data.stt_series ? ` [${data.stt_series}]` : '';
+      logText += `\n\n▶ Claude parsed: "${data.stt_title}"${data.stt_author ? ' by ' + data.stt_author : ''}${seriesPart}`;
+      logText += `\n▶ Added ${data.new_candidates || 0} candidate(s)`;
     }
     log.textContent = logText;
 
