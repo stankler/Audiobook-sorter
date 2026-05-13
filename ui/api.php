@@ -55,7 +55,7 @@ switch ($action) {
         break;
     case 'move_unidentified':
         $id = $_GET['id'] ?? '';
-        echo json_encode(daemon_post("/api/manual-review/{$id}/move-unidentified"));
+        echo json_encode(daemon_post("/api/manual-review/{$id}/move-unidentified", [], 600));
         break;
     case 'browse':
         $path = $_GET['path'] ?? '/mnt';

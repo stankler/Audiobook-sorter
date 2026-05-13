@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "audiobook-organizer">
   <!ENTITY author    "stankler">
-  <!ENTITY version   "2026.04.30.8">
+  <!ENTITY version   "2026.05.13">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/stankler/Audiobook-sorter/master/plugin/audiobook-organizer.plg">
   <!ENTITY pluginDir "/boot/config/plugins/&name;">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
@@ -11,6 +11,12 @@
         support="https://github.com/stankler/Audiobook-sorter/issues">
 
 <CHANGES>
+###2026.05.13
+- Fix Skip button crash: replace slow MD5 atomic copy with shutil.move (was timing out PHP at 10s on large books)
+- Skip now namespaces each book under _unidentified/&lt;source_folder&gt;/ to avoid filename collisions across skipped books
+- Skip now removes the item from manual review queue after success (was leaving stale entries)
+- Bump PHP timeout for move_unidentified to 600s for sweeping large folders
+
 ###2026.04.30.8
 - Transcribe now uses Claude to parse title, author, and series from transcript
 - Replaces Google Books / Open Library lookup with direct Claude extraction

@@ -201,18 +201,47 @@ async def identify_manual(item_id: str, body: dict):
 
 @app.post("/api/manual-review/{item_id}/move-unidentified")
 async def move_to_unidentified(item_id: str):
+    import shutil
     state = await load_scan_state()
     item = next((m for m in state.manual_review if m.id == item_id), None)
     if not item:
         raise HTTPException(404, "Item not found")
     cfg = await load_config()
-    dest = f"{cfg.dest_path}/_unidentified"
+    src_folder = Path(item.book_group.folder)
+    sub = src_folder.name or item_id
+    dest = Path(cfg.dest_path) / "_unidentified" / sub
+    _ao_logger.info("SKIP id=%r src_folder=%r dest=%r files=%d",
+                    item_id, str(src_folder), str(dest), len(item.book_group.files))
     try:
-        records = move_book_files(item.book_group.files, dest)
-        item.status = "moved"
+        dest.mkdir(parents=True, exist_ok=True)
+        try:
+            dest.chmod(0o777)
+        except Exception:
+            pass
+        moved = 0
+        for src_str in item.book_group.files:
+            src = Path(src_str)
+            if not src.exists():
+                _ao_logger.info("SKIP_MISSING src=%r", src_str)
+                continue
+            dst = dest / src.name
+            if dst.exists():
+                raise HTTPException(409, f"Destination already exists: {dst}")
+            shutil.move(str(src), str(dst))
+            try:
+                dst.chmod(0o666)
+            except Exception:
+                pass
+            moved += 1
+        move_remaining_folder_contents(str(src_folder), str(dest))
+        delete_empty_source_dirs(item.book_group.files)
+        state.manual_review = [m for m in state.manual_review if m.id != item_id]
         await save_scan_state(state)
-        return {"moved": len(records)}
+        return {"moved": moved, "dest": str(dest)}
+    except HTTPException:
+        raise
     except Exception as e:
+        _ao_logger.error("SKIP_ERR id=%r error=%r", item_id, str(e))
         raise HTTPException(500, str(e))
 
 @app.get("/api/browse")
