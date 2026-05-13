@@ -89,7 +89,7 @@ $log_content = implode("\n", $log_lines);
   </div>
 
   <div id="tab-review" class="ao-tabcontent">
-    <h2>Manual Review</h2>
+    <h2>Manual Review <small style="font-size:0.55em;color:#888;font-weight:normal">(<span id="review-pending-count">0</span> pending / <span id="review-total-queued">0</span> queued)</small></h2>
     <p>Select a candidate or search manually, then click Apply to move the files.</p>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
       <label><input type="checkbox" id="write-tags-toggle"> Write tags after move</label>

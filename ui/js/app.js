@@ -394,12 +394,17 @@ async function updateQueuedCount() {
   const state = await r.json();
   _queuedMoves = state.proposed_moves || [];
   const count = _queuedMoves.length;
+  const pending = (state.manual_review || []).length;
   const btn = document.getElementById('review-apply-btn');
   const countEl = document.getElementById('review-queued-count');
   if (btn && countEl) {
     countEl.textContent = count;
     btn.style.display = count > 0 ? '' : 'none';
   }
+  const pendingEl = document.getElementById('review-pending-count');
+  if (pendingEl) pendingEl.textContent = pending;
+  const totalQueuedEl = document.getElementById('review-total-queued');
+  if (totalQueuedEl) totalQueuedEl.textContent = count;
   renderQueuedList();
 }
 
@@ -495,6 +500,7 @@ async function moveUnidentified(id) {
   if (!document.getElementById('review-container').children.length) {
     document.getElementById('review-container').innerHTML = '<p>No items pending review.</p>';
   }
+  updateQueuedCount();
 }
 
 async function loadLogs() {

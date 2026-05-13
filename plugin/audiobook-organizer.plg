@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "audiobook-organizer">
   <!ENTITY author    "stankler">
-  <!ENTITY version   "2026.05.13">
+  <!ENTITY version   "2026.05.13.1">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/stankler/Audiobook-sorter/master/plugin/audiobook-organizer.plg">
   <!ENTITY pluginDir "/boot/config/plugins/&name;">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
@@ -11,6 +11,9 @@
         support="https://github.com/stankler/Audiobook-sorter/issues">
 
 <CHANGES>
+###2026.05.13.1
+- Manual Review header now shows live counts: "(N pending / M queued)" — updates after skip, identify, and apply
+
 ###2026.05.13
 - Fix Skip button crash: replace slow MD5 atomic copy with shutil.move (was timing out PHP at 10s on large books)
 - Skip now namespaces each book under _unidentified/&lt;source_folder&gt;/ to avoid filename collisions across skipped books
