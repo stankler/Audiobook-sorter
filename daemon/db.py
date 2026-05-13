@@ -3,7 +3,7 @@ import os
 from typing import AsyncGenerator
 
 def _db_path() -> str:
-    return os.environ.get("DB_PATH", "/boot/config/plugins/audiobook-organizer/state.db")
+    return os.environ.get("DB_PATH", "/config/state.db")
 
 async def get_db() -> AsyncGenerator[aiosqlite.Connection, None]:
     path = _db_path()

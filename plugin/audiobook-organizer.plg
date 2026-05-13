@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "audiobook-organizer">
   <!ENTITY author    "stankler">
-  <!ENTITY version   "2026.05.13.1">
+  <!ENTITY version   "2026.05.13.2">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/stankler/Audiobook-sorter/master/plugin/audiobook-organizer.plg">
   <!ENTITY pluginDir "/boot/config/plugins/&name;">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
@@ -11,6 +11,9 @@
         support="https://github.com/stankler/Audiobook-sorter/issues">
 
 <CHANGES>
+###2026.05.13.2
+- Fix data loss on plugin/container update: daemon now writes state.db to /config (the mounted persistent volume) instead of an ephemeral in-container path. Configuration, scan progress, manual review queue, and queued moves now survive image updates and container recreates.
+
 ###2026.05.13.1
 - Manual Review header now shows live counts: "(N pending / M queued)" — updates after skip, identify, and apply
 
